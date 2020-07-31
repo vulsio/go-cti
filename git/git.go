@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/inconshreveable/log15"
 	"golang.org/x/xerrors"
@@ -15,6 +16,7 @@ import (
 // Operations :
 type Operations interface {
 	CloneRepo(string, string) (map[string]struct{}, error)
+	Grep(string, string) ([]string, error)
 }
 
 // Config :
@@ -72,6 +74,20 @@ func clone(url, repoPath string) error {
 		return xerrors.Errorf("failed to clone: %w", err)
 	}
 	return nil
+}
+
+// Grep :
+func (gc Config) Grep(regex string, repoPath string) ([]string, error) {
+	commandAndArgs := generateGitArgs(repoPath)
+
+	grepCmd := []string{"grep", "-i", "-o", "--full-name", "-E", regex}
+	output, err := utils.Exec("git", append(commandAndArgs, grepCmd...))
+	if err != nil {
+		return nil, xerrors.Errorf("error in git grep: %w", err)
+	}
+	matchedFiles := strings.Split(strings.TrimSpace(output), "\n")
+
+	return matchedFiles, nil
 }
 
 func generateGitArgs(repoPath string) []string {

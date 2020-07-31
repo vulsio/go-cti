@@ -1,6 +1,7 @@
 package fetcher
 
 import (
+	"fmt"
 	// "bytes"
 	// "encoding/json"
 	// "io"
@@ -15,6 +16,11 @@ import (
 
 const (
 	repoURL = "https://github.com/mitre/cti.git"
+)
+
+var (
+	cveRegex1 = "CVE-[0-9]{4}-[0-9]{4}"
+	cveRegex2 = "CVE-[0-9]{4}-[0-9]{5}"
 )
 
 // Config : Config parameters used in Git.
@@ -33,5 +39,17 @@ func (c Config) FetchMitreCti() (err error) {
 	}
 	log15.Info("Updated files", "count", len(updatedFiles))
 
+	matchedFiles, err := c.GitClient.Grep(cveRegex1, dir)
+	if err != nil {
+		return err
+	}
+
+	matchedFiles2, err := c.GitClient.Grep(cveRegex2, dir)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(matchedFiles)
+	fmt.Println(matchedFiles2)
 	return nil
 }
