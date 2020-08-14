@@ -6,6 +6,7 @@ import (
 	// "encoding/json"
 	// "io"
 	"path/filepath"
+	"strings"
 
 	"github.com/inconshreveable/log15"
 	// "golang.org/x/xerrors"
@@ -44,12 +45,25 @@ func (c Config) FetchMitreCti() (err error) {
 		return err
 	}
 
+	for _, m := range matchedFiles {
+		s := strings.Split(m, ":")
+		filePath := s[0]
+		cveID := strings.ToUpper(s[1])
+		fmt.Println(filePath, cveID)
+	}
+
+
 	matchedFiles2, err := c.GitClient.Grep(cveRegex2, dir)
 	if err != nil {
 		return err
 	}
 
-	fmt.Println(matchedFiles)
-	fmt.Println(matchedFiles2)
+	for _, m := range matchedFiles2 {
+		s := strings.Split(m, ":")
+		filePath := s[0]
+		cveID := strings.ToUpper(s[1])
+		fmt.Println(filePath, cveID)
+	}
+	
 	return nil
 }
