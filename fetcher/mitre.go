@@ -1,10 +1,9 @@
 package fetcher
 
 import (
-	"fmt"
 	// "bytes"
-	// "encoding/json"
-	// "io"
+	"encoding/json"
+	"io/ioutil"
 	"path/filepath"
 	"strings"
 
@@ -12,14 +11,12 @@ import (
 	// "golang.org/x/xerrors"
 
 	"github.com/vulsio/go-cti/git"
+	"github.com/vulsio/go-cti/models"
 	"github.com/vulsio/go-cti/utils"
 )
 
 const (
 	repoURL = "https://github.com/mitre/cti.git"
-)
-
-var (
 	cveRegex1 = "CVE-[0-9]{4}-[0-9]{4}"
 	cveRegex2 = "CVE-[0-9]{4}-[0-9]{5}"
 )
@@ -30,40 +27,50 @@ type Config struct {
 }
 
 // FetchMitreCti :
-func (c Config) FetchMitreCti() (err error) {
-	// Clone vuln-list repository
+func (c Config) FetchMitreCti() (records []*models.Cti, err error) {
+	// Clone cyber threat repository
 	dir := filepath.Join(utils.CacheDir(), "cti")
 	updatedFiles, err := c.GitClient.CloneRepo(repoURL, dir)
 	if err != nil {
-		// return nil, err
-		return err
+		return nil, err
 	}
 	log15.Info("Updated files", "count", len(updatedFiles))
 
-	matchedFiles, err := c.GitClient.Grep(cveRegex1, dir)
-	if err != nil {
-		return err
+	cvePatterns := []string{
+		cveRegex1,
+		cveRegex2,
 	}
+	for _, p := range cvePatterns {
+		matched, err := c.GitClient.Grep(p, dir)
+		if err != nil {
+			return nil, err
+		}
+		for _, m := range matched {
+			s := strings.Split(m, ":")
+			path := filepath.Join(dir, s[0])
+			cveID := strings.ToUpper(s[1])
 
-	for _, m := range matchedFiles {
-		s := strings.Split(m, ":")
-		filePath := s[0]
-		cveID := strings.ToUpper(s[1])
-		fmt.Println(filePath, cveID)
-	}
+			bytes, err := ioutil.ReadFile(path)
+			items := json.Unmarshal(bytes, &Capec{}) 
 
-
-	matchedFiles2, err := c.GitClient.Grep(cveRegex2, dir)
-	if err != nil {
-		return err
-	}
-
-	for _, m := range matchedFiles2 {
-		s := strings.Split(m, ":")
-		filePath := s[0]
-		cveID := strings.ToUpper(s[1])
-		fmt.Println(filePath, cveID)
+			for _, item := range items {
+				record, err := convertToModel(item, cveID)
+				if err != nil {
+					return nil, err
+				}
+				records = append(records, record)
+			}
+		}
 	}
 	
-	return nil
+	return records, nil
+}
+
+func convertToModel(path string, cveID string) (*models.Cti, error) {
+
+	return &models.Cti{
+		Name:        item.Name,
+		Description: item.Description,
+		CveID:       cveID,
+	}, nil
 }
