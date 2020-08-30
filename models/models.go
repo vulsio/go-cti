@@ -11,7 +11,7 @@ type LastUpdated struct {
 	Date time.Time
 }
 
-// Cti : 
+// Cti :
 type Cti struct {
 	gorm.Model  `json:"-" xml:"-"`
 	Name        string

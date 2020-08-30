@@ -1,9 +1,8 @@
 package fetcher
 
-import(
+import (
 	"time"
 )
-
 
 // Capec :
 type Capec struct {
@@ -14,7 +13,7 @@ type Capec struct {
 		Type               string    `json:"type"`
 		ID                 string    `json:"id"`
 		CreatedByRef       string    `json:"created_by_ref"`
-		Aliases              []string  `json:"aliases"`
+		Aliases            []string  `json:"aliases"`
 		Created            time.Time `json:"created"`
 		Modified           time.Time `json:"modified"`
 		Name               string    `json:"name"`
@@ -29,15 +28,15 @@ type Capec struct {
 			KillChainName string `json:"kill_chain_name"`
 			PhaseName     string `json:"phase_name"`
 		} `json:"kill_chain_phases"`
-		ObjectMarkingRefs  []string `json:"object_marking_refs"`
+		ObjectMarkingRefs []string `json:"object_marking_refs"`
 		// Capec
-		XCapecAbstraction  string   `json:"x_capec_abstraction"`
+		XCapecAbstraction  string `json:"x_capec_abstraction"`
 		XCapecConsequences struct {
 			AccessControl   []string `json:"Access_Control"`
 			Authorization   []string `json:"Authorization"`
 			Availability    []string `json:"Availability"`
 			Confidentiality []string `json:"Confidentiality"`
-			Integrity []string `json:"Integrity"`
+			Integrity       []string `json:"Integrity"`
 		} `json:"x_capec_consequences"`
 		XCapecExampleInstances   []string `json:"x_capec_example_instances"`
 		XCapecLikelihoodOfAttack string   `json:"x_capec_likelihood_of_attack"`
@@ -52,11 +51,11 @@ type Capec struct {
 		XCapecTypicalSeverity string `json:"x_capec_typical_severity"`
 		XCapecVersion         string `json:"x_capec_version"`
 		// Mitre
-		XMitreIsSubtechnique bool      `json:"x_mitre_is_subtechnique"`
-		XMitreContributors   []string  `json:"x_mitre_contributors"`
-		XMitreVersion        string    `json:"x_mitre_version"`
-		XMitreDataSources    []string  `json:"x_mitre_data_sources"`
-		XMitreDetection      string    `json:"x_mitre_detection"`
-		XMitrePlatforms      []string  `json:"x_mitre_platforms"`
+		XMitreIsSubtechnique bool     `json:"x_mitre_is_subtechnique"`
+		XMitreContributors   []string `json:"x_mitre_contributors"`
+		XMitreVersion        string   `json:"x_mitre_version"`
+		XMitreDataSources    []string `json:"x_mitre_data_sources"`
+		XMitreDetection      string   `json:"x_mitre_detection"`
+		XMitrePlatforms      []string `json:"x_mitre_platforms"`
 	} `json:"objects"`
 }
