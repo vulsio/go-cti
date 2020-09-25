@@ -68,7 +68,9 @@ func (r *RDBDriver) CloseDB() (err error) {
 func (r *RDBDriver) DropDB() error {
 	if err := r.conn.DropTableIfExists(
 		&models.Cti{},
+		&models.KillChain{},
 		&models.Reference{},
+		"cti_kills",
 		"cti_refs",
 	).Error; err != nil {
 		return fmt.Errorf("Failed to drop. err: %s", err)
@@ -80,6 +82,7 @@ func (r *RDBDriver) DropDB() error {
 func (r *RDBDriver) MigrateDB() error {
 	if err := r.conn.AutoMigrate(
 		&models.Cti{},
+		&models.KillChain{},
 		&models.Reference{},
 	).Error; err != nil {
 		return fmt.Errorf("Failed to migrate. err: %s", err)
@@ -121,6 +124,7 @@ func (r *RDBDriver) deleteAndInsertCti(conn *gorm.DB, records []*models.Cti) (er
 		// Delete all old records
 		var errs gorm.Errors
 		errs = errs.Add(tx.Unscoped().Delete(models.Cti{}).Error)
+		errs = errs.Add(tx.Unscoped().Delete(models.KillChain{}).Error)
 		errs = errs.Add(tx.Unscoped().Delete(models.Reference{}).Error)
 		errs = utils.DeleteNil(errs)
 		if len(errs.GetErrors()) > 0 {

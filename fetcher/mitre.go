@@ -10,7 +10,7 @@ import (
 
 	"github.com/cheggaaa/pb"
 	"github.com/inconshreveable/log15"
-	// "golang.org/x/xerrors"
+	"golang.org/x/xerrors"
 
 	"github.com/vulsio/go-cti/git"
 	"github.com/vulsio/go-cti/models"
@@ -72,10 +72,9 @@ func (c Config) FetchMitreCti() (records []*models.Cti, err error) {
 			}
 
 			for _, item := range capec.Objects {
-				record := &models.Cti{
-					Name:        item.Name,
-					Description: item.Description,
-					CveID:       cveID,
+				record, err := convertToModel(cveID, item)
+				if err != nil {
+					return nil, xerrors.Errorf("failed to convert model: %w", err)
 				}
 				records = append(records, record)
 			}
@@ -85,4 +84,35 @@ func (c Config) FetchMitreCti() (records []*models.Cti, err error) {
 	}
 
 	return records, nil
+}
+
+func convertToModel(cveID string, item CapecObjects) (*models.Cti, error) {
+	// KillChainPhases
+	kills := []models.KillChain{}
+	for _, k := range item.KillChainPhases {
+		kill := models.KillChain{
+			Name:  k.KillChainName,
+			Phase: k.PhaseName,
+		}
+		kills = append(kills, kill)
+	}
+
+	// References
+	refs := []models.Reference{}
+	for _, r := range item.ExternalReferences {
+		ref := models.Reference{
+			ExternalID:  r.ExternalID,
+			Link:        r.URL,
+			Description: r.Description,
+		}
+		refs = append(refs, ref)
+	}
+
+	return &models.Cti{
+		Name:        item.Name,
+		Description: item.Description,
+		CveID:       cveID,
+		KillChains:  kills,
+		References:  refs,
+	}, nil
 }
