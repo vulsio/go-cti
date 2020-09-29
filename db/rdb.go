@@ -64,20 +64,6 @@ func (r *RDBDriver) CloseDB() (err error) {
 	return
 }
 
-// DropDB drop tables
-func (r *RDBDriver) DropDB() error {
-	if err := r.conn.DropTableIfExists(
-		&models.Cti{},
-		&models.KillChain{},
-		&models.Reference{},
-		"cti_kills",
-		"cti_refs",
-	).Error; err != nil {
-		return fmt.Errorf("Failed to drop. err: %s", err)
-	}
-	return nil
-}
-
 // MigrateDB migrates Database
 func (r *RDBDriver) MigrateDB() error {
 	if err := r.conn.AutoMigrate(
@@ -89,7 +75,6 @@ func (r *RDBDriver) MigrateDB() error {
 	}
 
 	var errs gorm.Errors
-	// Cti
 	errs = errs.Add(r.conn.Model(&models.Cti{}).AddIndex("idx_cti_cve_id", "cve_id").Error)
 
 	for _, e := range errs {
@@ -102,7 +87,7 @@ func (r *RDBDriver) MigrateDB() error {
 
 // InsertCti :
 func (r *RDBDriver) InsertCti(records []*models.Cti) (err error) {
-	log15.Info("Inserting Modules having CVEs...")
+	log15.Info("Inserting Threat Intelligences having CVEs...")
 	return r.deleteAndInsertCti(r.conn, records)
 }
 
@@ -123,9 +108,9 @@ func (r *RDBDriver) deleteAndInsertCti(conn *gorm.DB, records []*models.Cti) (er
 	if !result.RecordNotFound() {
 		// Delete all old records
 		var errs gorm.Errors
-		errs = errs.Add(tx.Unscoped().Delete(models.Cti{}).Error)
 		errs = errs.Add(tx.Unscoped().Delete(models.KillChain{}).Error)
 		errs = errs.Add(tx.Unscoped().Delete(models.Reference{}).Error)
+		errs = errs.Add(tx.Unscoped().Delete(models.Cti{}).Error)
 		errs = utils.DeleteNil(errs)
 		if len(errs.GetErrors()) > 0 {
 			return fmt.Errorf("Failed to delete old records. err: %s", errs.Error())

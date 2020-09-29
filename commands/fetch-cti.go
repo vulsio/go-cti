@@ -23,13 +23,10 @@ func init() {
 }
 
 func fetchMitreCti(cmd *cobra.Command, args []string) (err error) {
-	var isFetch = true
-
 	driver, locked, err := db.NewDB(
 		viper.GetString("dbtype"),
 		viper.GetString("dbpath"),
 		viper.GetBool("debug-sql"),
-		isFetch,
 	)
 	if err != nil {
 		if locked {
@@ -58,6 +55,5 @@ func fetchMitreCti(cmd *cobra.Command, args []string) (err error) {
 		log15.Error("Failed to insert.", "dbpath", viper.GetString("dbpath"), "err", err)
 		return err
 	}
-
 	return nil
 }

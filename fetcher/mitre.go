@@ -110,6 +110,7 @@ func convertToModel(cveID string, item CapecObjects) (*models.Cti, error) {
 
 	return &models.Cti{
 		Name:        item.Name,
+		Type:        item.Type,
 		Description: item.Description,
 		CveID:       cveID,
 		KillChains:  kills,

@@ -2,8 +2,6 @@ package models
 
 import (
 	"time"
-
-	"github.com/jinzhu/gorm"
 )
 
 // LastUpdated :
@@ -13,24 +11,27 @@ type LastUpdated struct {
 
 // Cti : Cyber Threat Intelligence
 type Cti struct {
-	gorm.Model  `json:"-" xml:"-"`
+	ID          int64 `json:",omitempty"`
 	Name        string
+	Type        string
 	Description string
 	CveID       string
-	KillChains  []KillChain `json:",omitempty" gorm:"many2many:cti_kills;"`
-	References  []Reference `json:",omitempty" gorm:"many2many:cti_refs;"`
+	KillChains  []KillChain `json:",omitempty"`
+	References  []Reference `json:",omitempty"`
 }
 
 // KillChain is Child model of Cti
 type KillChain struct {
-	ID    uint `json:",omitempty"`
+	ID    int64 `json:",omitempty"`
+	CtiID int64 `sql:"type:bigint REFERENCES ctis(id)" json:",omitempty"`
 	Name  string
 	Phase string
 }
 
 // Reference is Child model of Cti
 type Reference struct {
-	ID          uint `json:",omitempty"`
+	ID          int64 `json:",omitempty"`
+	CtiID       int64 `sql:"type:bigint REFERENCES ctis(id)" json:",omitempty"`
 	ExternalID  string
 	Link        string `sql:"type:text"`
 	Description string `sql:"type:text"`
