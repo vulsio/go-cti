@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/cheggaaa/pb"
 	"github.com/inconshreveable/log15"
@@ -87,6 +88,26 @@ func (c Config) FetchMitreCti() (records []*models.Cti, err error) {
 }
 
 func convertToModel(cveID string, item CapecObjects) (*models.Cti, error) {
+	publish, err := parseCtiJSONTime(item.Created)
+	if err != nil {
+		return nil, err
+	}
+	modified, err := parseCtiJSONTime(item.Modified)
+	if err != nil {
+		return nil, err
+	}
+
+	// Common Attack Pattern Enumeration and Classification
+	xcapec := models.Capec{}
+	if item.XCapecVersion != "" {
+		xcapec = models.Capec{
+			Abstruct: item.XCapecAbstraction,
+			Severity: item.XCapecTypicalSeverity,
+			Status:   item.XCapecStatus,
+			Version:  item.XCapecVersion,
+		}
+	}
+
 	// KillChainPhases
 	kills := []models.KillChain{}
 	for _, k := range item.KillChainPhases {
@@ -109,11 +130,24 @@ func convertToModel(cveID string, item CapecObjects) (*models.Cti, error) {
 	}
 
 	return &models.Cti{
-		Name:        item.Name,
-		Type:        item.Type,
-		Description: item.Description,
-		CveID:       cveID,
-		KillChains:  kills,
-		References:  refs,
+		Name:             item.Name,
+		Type:             item.Type,
+		Description:      item.Description,
+		CveID:            cveID,
+		Capec:            &xcapec,
+		KillChains:       kills,
+		References:       refs,
+		PublishedDate:    publish,
+		LastModifiedDate: modified,
 	}, nil
+}
+
+func parseCtiJSONTime(strtime string) (t time.Time, err error) {
+	layout := "2006-01-02T15:04:05Z"
+	t, err = time.Parse(layout, strtime)
+	if err != nil {
+		return t, xerrors.Errorf("Failed to parse time, time: %s, err: %s",
+			strtime, err)
+	}
+	return
 }

@@ -68,6 +68,7 @@ func (r *RDBDriver) CloseDB() (err error) {
 func (r *RDBDriver) MigrateDB() error {
 	if err := r.conn.AutoMigrate(
 		&models.Cti{},
+		&models.Capec{},
 		&models.KillChain{},
 		&models.Reference{},
 	).Error; err != nil {
@@ -108,6 +109,7 @@ func (r *RDBDriver) deleteAndInsertCti(conn *gorm.DB, records []*models.Cti) (er
 	if !result.RecordNotFound() {
 		// Delete all old records
 		var errs gorm.Errors
+		errs = errs.Add(tx.Unscoped().Delete(models.Capec{}).Error)
 		errs = errs.Add(tx.Unscoped().Delete(models.KillChain{}).Error)
 		errs = errs.Add(tx.Unscoped().Delete(models.Reference{}).Error)
 		errs = errs.Add(tx.Unscoped().Delete(models.Cti{}).Error)

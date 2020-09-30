@@ -1,9 +1,5 @@
 package fetcher
 
-import (
-	"time"
-)
-
 // Capec :
 type Capec struct {
 	Type        string         `json:"type"`
@@ -14,14 +10,14 @@ type Capec struct {
 
 // CapecObjects :
 type CapecObjects struct {
-	Type               string    `json:"type"`
-	ID                 string    `json:"id"`
-	CreatedByRef       string    `json:"created_by_ref"`
-	Aliases            []string  `json:"aliases"`
-	Created            time.Time `json:"created"`
-	Modified           time.Time `json:"modified"`
-	Name               string    `json:"name"`
-	Description        string    `json:"description"`
+	Type               string   `json:"type"`
+	ID                 string   `json:"id"`
+	CreatedByRef       string   `json:"created_by_ref"`
+	Aliases            []string `json:"aliases"`
+	Created            string   `json:"created"`
+	Modified           string   `json:"modified"`
+	Name               string   `json:"name"`
+	Description        string   `json:"description"`
 	ExternalReferences []struct {
 		SourceName  string `json:"source_name"`
 		URL         string `json:"url,omitempty"`
@@ -34,15 +30,18 @@ type CapecObjects struct {
 	} `json:"kill_chain_phases"`
 	ObjectMarkingRefs []string `json:"object_marking_refs"`
 	// Capec
-	XCapecAbstraction  string `json:"x_capec_abstraction"`
-	XCapecConsequences struct {
+	XCapecAbstraction    string   `json:"x_capec_abstraction"`
+	XCapecAlternateTerms []string `json:"x_capec_alternate_terms"`
+	XCapecConsequences   struct {
 		AccessControl   []string `json:"Access_Control"`
 		Authorization   []string `json:"Authorization"`
 		Availability    []string `json:"Availability"`
 		Confidentiality []string `json:"Confidentiality"`
 		Integrity       []string `json:"Integrity"`
+		Other           []string `json:"Other"`
 	} `json:"x_capec_consequences"`
 	XCapecExampleInstances   []string `json:"x_capec_example_instances"`
+	XCapecExecutionFlow      string   `json:"x_capec_execution_flow"`
 	XCapecLikelihoodOfAttack string   `json:"x_capec_likelihood_of_attack"`
 	XCapecPrerequisites      []string `json:"x_capec_prerequisites"`
 	XCapecResourcesRequired  []string `json:"x_capec_resources_required"`
