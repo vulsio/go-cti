@@ -3,6 +3,7 @@ package fetcher
 import (
 	// "bytes"
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"path/filepath"
 	"regexp"
@@ -88,14 +89,14 @@ func (c Config) FetchMitreCti() (records []*models.Cti, err error) {
 }
 
 func convertToModel(cveID string, item CapecObjects) (*models.Cti, error) {
-	publish, err := parseCtiJSONTime(item.Created)
-	if err != nil {
-		return nil, err
-	}
-	modified, err := parseCtiJSONTime(item.Modified)
-	if err != nil {
-		return nil, err
-	}
+	// publish, err := parseCtiJSONTime(item.Created)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// modified, err := parseCtiJSONTime(item.Modified)
+	// if err != nil {
+	// 	return nil, err
+	// }
 
 	// Common Attack Pattern Enumeration and Classification
 	xcapec := models.Capec{}
@@ -137,14 +138,16 @@ func convertToModel(cveID string, item CapecObjects) (*models.Cti, error) {
 		Capec:            &xcapec,
 		KillChains:       kills,
 		References:       refs,
-		PublishedDate:    publish,
-		LastModifiedDate: modified,
+		// PublishedDate:    publish,
+		// LastModifiedDate: modified,
 	}, nil
 }
 
 func parseCtiJSONTime(strtime string) (t time.Time, err error) {
+	fmt.Println(strtime)
 	layout := "2006-01-02T15:04:05Z"
 	t, err = time.Parse(layout, strtime)
+	fmt.Println(t)
 	if err != nil {
 		return t, xerrors.Errorf("Failed to parse time, time: %s, err: %s",
 			strtime, err)

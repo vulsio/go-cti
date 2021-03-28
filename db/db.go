@@ -3,8 +3,6 @@ package db
 import (
 	"fmt"
 
-	"github.com/inconshreveable/log15"
-
 	"github.com/vulsio/go-cti/models"
 )
 
@@ -23,7 +21,6 @@ func NewDB(dbType string, dbPath string, debugSQL bool) (driver DB, locked bool,
 		return driver, false, fmt.Errorf("Failed to new db: %w", err)
 	}
 
-	log15.Info("Opening DB", "db", driver.Name())
 	if locked, err := driver.OpenDB(dbType, dbPath, debugSQL); err != nil {
 		if locked {
 			return nil, true, err
@@ -31,7 +28,6 @@ func NewDB(dbType string, dbPath string, debugSQL bool) (driver DB, locked bool,
 		return nil, false, err
 	}
 
-	log15.Info("Migrating DB", "db", driver.Name())
 	if err := driver.MigrateDB(); err != nil {
 		return driver, false, fmt.Errorf("Failed to migrate db: %w", err)
 	}

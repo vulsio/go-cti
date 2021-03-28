@@ -19,8 +19,8 @@ type Cti struct {
 	Capec            *Capec      `json:",omitempty"`
 	KillChains       []KillChain `json:",omitempty"`
 	References       []Reference `json:",omitempty"`
-	PublishedDate    time.Time
-	LastModifiedDate time.Time
+	// PublishedDate    time.Time
+	// LastModifiedDate time.Time
 }
 
 // Capec is Child model of Cti
