@@ -13,3 +13,13 @@
 
 # Dependency directories (remove the comment below to include it)
 # vendor/
+
+# Priject's ignore
+go-cti
+*.sqlite3
+*.sqlite3-shm
+*.sqlite3-wal
+data
+cache
+.DS_Store
+.vscode
