@@ -13,6 +13,7 @@ type DB interface {
 	MigrateDB() error
 	CloseDB() error
 	InsertCti([]*models.Cti) error
+	GetModuleByCveID(string) []*models.Cti
 }
 
 // NewDB :
