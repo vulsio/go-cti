@@ -62,16 +62,16 @@ func searchCti(cmd *cobra.Command, args []string) (err error) {
 	log15.Info("Get results")
 	resultsByteData, err := json.Marshal(results)
 	if err != nil {
-		return errors.New(fmt.Sprintf("Failed to marshal :%s", err))
+		return fmt.Errorf("Failed to marshal :%s", err)
 	}
 	log15.Info("Output as JSON")
-	if err := outputJson(fmt.Sprintf("%s.json", param), resultsByteData); err != nil {
-		return errors.New(fmt.Sprintf("Failed to output :%s", err))
+	if err := outputJSON(fmt.Sprintf("%s.json", param), resultsByteData); err != nil {
+		return fmt.Errorf("Failed to output :%s", err)
 	}
 	return nil
 }
 
-func outputJson(filename string, binaryData []byte) error {
+func outputJSON(filename string, binaryData []byte) error {
 	file, err := os.Create(filename)
 	if err != nil {
 		return err
