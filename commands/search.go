@@ -1,8 +1,10 @@
 package commands
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"regexp"
 
 	"github.com/inconshreveable/log15"
@@ -10,9 +12,6 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/vulsio/go-cti/db"
-	//"github.com/vulsio/go-cti/fetcher"
-	//"github.com/vulsio/go-cti/git"
-	//"github.com/vulsio/go-cti/models"
 )
 
 // fetchCmd represents the fetch command
@@ -30,13 +29,7 @@ var (
 func init() {
 	RootCmd.AddCommand(searchCmd)
 
-	searchCmd.PersistentFlags().String("type", "", "All Metasploit Framework modules by CVE: CVE  |  by EDB: EDB (default: CVE)")
-	if err := viper.BindPFlag("type", searchCmd.PersistentFlags().Lookup("type")); err != nil {
-		panic(err)
-	}
-	viper.SetDefault("type", "CVE")
-
-	searchCmd.PersistentFlags().String("param", "", "All Metasploit Framework modules: None  |  by CVE: [CVE-xxxx]  | by EDB: [EDB-xxxx]  (default: None)")
+	searchCmd.PersistentFlags().String("param", "", "All Metasploit Framework modules: None by CVE: [CVE-xxxx-xxxx] or [CVE-xxxx-xxxxx]")
 	if err := viper.BindPFlag("param", searchCmd.PersistentFlags().Lookup("param")); err != nil {
 		panic(err)
 	}
@@ -56,26 +49,38 @@ func searchCti(cmd *cobra.Command, args []string) (err error) {
 		return err
 	}
 
-	searchType := viper.GetString("type")
 	param := viper.GetString("param")
-	switch searchType {
-	case "CVE":
-		if !cveIDRegexp.Match([]byte(param)) {
-			log15.Error("Specify the search type [CVE] parameters like `--param CVE-xxxx-xxxx`")
-			return errors.New("Invalid CVE Param")
-		}
-		results := driver.GetModuleByCveID(param)
-		if len(results) == 0 {
-			log15.Error(fmt.Sprintf("No results of CVE which ID is %s", param))
-			return errors.New("No results")
-		}
-		log15.Info("Get results")
-		for _, result := range results {
-			fmt.Printf("%s\n", result.CveID)
-		}
-	default:
-		log15.Error("Specify the search type [CVE / EDB].")
-		return errors.New("Invalid Type")
+	if !cveIDRegexp.Match([]byte(param)) {
+		log15.Error("Specify the search parameters like `--param CVE-xxxx-xxxx` or `--param CVE-xxxx-xxxxx`")
+		return errors.New("Invalid CVE Param")
+	}
+	results := driver.GetModuleByCveID(param)
+	if len(results) == 0 {
+		log15.Error(fmt.Sprintf("No results of CVE which ID is %s", param))
+		return errors.New("No results")
+	}
+	log15.Info("Get results")
+	resultsByteData, err := json.Marshal(results)
+	if err != nil {
+		return errors.New(fmt.Sprintf("Failed to marshal :%s", err))
+	}
+	log15.Info("Output as JSON")
+	if err := outputJson(fmt.Sprintf("%s.json", param), resultsByteData); err != nil {
+		return errors.New(fmt.Sprintf("Failed to output :%s", err))
+	}
+	return nil
+}
+
+func outputJson(filename string, binaryData []byte) error {
+	file, err := os.Create(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	_, err = file.Write(binaryData)
+	if err != nil {
+		return err
 	}
 	return nil
 }
