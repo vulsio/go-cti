@@ -28,7 +28,7 @@ var (
 func init() {
 	RootCmd.AddCommand(searchCmd)
 
-	searchCmd.PersistentFlags().String("param", "", "All Metasploit Framework modules: None by CVE: [CVE-xxxx-xxxx] or [CVE-xxxx-xxxxx]")
+	searchCmd.PersistentFlags().String("param", "", "All mitre Framework modules: None by CVE: `^CVE-\\d{1,}-\\d{1,}$`")
 	if err := viper.BindPFlag("param", searchCmd.PersistentFlags().Lookup("param")); err != nil {
 		panic(err)
 	}
@@ -49,8 +49,8 @@ func searchCti(cmd *cobra.Command, args []string) (err error) {
 	}
 
 	param := viper.GetString("param")
-	if !cveIDRegexp.Match([]byte(param)) {
-		log15.Error("Specify the search parameters like `--param CVE-xxxx-xxxx` or `--param CVE-xxxx-xxxxx`")
+	if !cveIDRegexp.MatchString(param) {
+		log15.Error("Specify the search parameters like `--param CVE-xxxx-xxxx`")
 		return errors.New("Invalid CVE Param")
 	}
 	results := driver.GetModuleByCveID(param)

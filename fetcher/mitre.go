@@ -20,17 +20,12 @@ import (
 )
 
 var (
-	ignoreJSON = regexp.MustCompile(`stix-capec.json|enterprise-attack.json|mobile-attack.json|pre-attack.json`)
+	ignoreJSON = regexp.MustCompile(`(stix-capec.json|enterprise-attack.json|mobile-attack.json|pre-attack)\.json`)
 )
 
 const (
-	repoURL     = "https://github.com/mitre/cti.git"
-	cvePattern1 = "CVE-[0-9]{4}-[0-9]{4}"
-	cvePattern2 = "CVE-[0-9]{4}-[0-9]{5}"
-	// ignoreJSON1 = "stix-capec.json"
-	// ignoreJSON2 = "enterprise-attack.json"
-	// ignoreJSON3 = "mobile-attack.json"
-	// ignoreJSON4 = "pre-attack.json"
+	repoURL  = "https://github.com/mitre/cti.git"
+	cveRegex = `CVE-\d{1,}-\d{1,}`
 )
 
 // Config : Config parameters used in Git.
@@ -48,43 +43,37 @@ func (c Config) FetchMitreCti() (records []*models.Cti, err error) {
 	}
 	log15.Info("Updated files", "count", len(updatedFiles))
 
-	cvePatterns := []string{
-		cvePattern1,
-		cvePattern2,
+	matched, err := c.GitClient.Grep(cveRegex, dir)
+	if err != nil {
+		return nil, err
 	}
-	for _, p := range cvePatterns {
-		matched, err := c.GitClient.Grep(p, dir)
-		if err != nil {
+
+	bar := pb.StartNew(len(matched))
+	for _, m := range matched {
+		s := strings.Split(m, ":")
+		if ignoreJSON.MatchString(s[0]) {
+			bar.Increment()
+			continue
+		}
+		path := filepath.Join(dir, s[0])
+		cveID := strings.ToUpper(s[1])
+
+		var capec Capec
+		bytes, err := ioutil.ReadFile(path)
+		if err = json.Unmarshal(bytes, &capec); err != nil {
 			return nil, err
 		}
 
-		bar := pb.StartNew(len(matched))
-		for _, m := range matched {
-			s := strings.Split(m, ":")
-			if ignoreJSON.MatchString(s[0]) {
-				bar.Increment()
-				continue
+		for _, item := range capec.Objects {
+			record, err := convertToModel(cveID, item)
+			if err != nil {
+				return nil, xerrors.Errorf("failed to convert model: %w", err)
 			}
-			path := filepath.Join(dir, s[0])
-			cveID := strings.ToUpper(s[1])
-
-			var capec Capec
-			bytes, err := ioutil.ReadFile(path)
-			if err = json.Unmarshal(bytes, &capec); err != nil {
-				return nil, err
-			}
-
-			for _, item := range capec.Objects {
-				record, err := convertToModel(cveID, item)
-				if err != nil {
-					return nil, xerrors.Errorf("failed to convert model: %w", err)
-				}
-				records = append(records, record)
-			}
-			bar.Increment()
+			records = append(records, record)
 		}
-		bar.Finish()
+		bar.Increment()
 	}
+	bar.Finish()
 
 	return records, nil
 }
