@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	ignoreJSON = regexp.MustCompile(`(stix-capec.json|enterprise-attack.json|mobile-attack.json|pre-attack)\.json`)
+	ignoreJSON = regexp.MustCompile(`(stix-capec|enterprise-attack|mobile-attack|pre-attack)\.json`)
 )
 
 const (
@@ -43,6 +43,7 @@ func (c Config) FetchMitreCti() (records []*models.Cti, err error) {
 	}
 	log15.Info("Updated files", "count", len(updatedFiles))
 
+	// Get what have CVE ID
 	matched, err := c.GitClient.Grep(cveRegex, dir)
 	if err != nil {
 		return nil, err
