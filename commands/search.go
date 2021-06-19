@@ -55,8 +55,8 @@ func searchCti(cmd *cobra.Command, args []string) (err error) {
 	}
 	results := driver.GetModuleByCveID(param)
 	if len(results) == 0 {
-		log15.Error(fmt.Sprintf("No results of CVE which ID is %s", param))
-		return errors.New("No results")
+		log15.Info(fmt.Sprintf("No results of CVE which ID is %s", param))
+		return nil
 	}
 	log15.Info("Get results")
 	resultsByteData, err := json.Marshal(results)
