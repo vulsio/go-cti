@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"regexp"
 
 	"github.com/inconshreveable/log15"
@@ -65,22 +64,6 @@ func searchCti(cmd *cobra.Command, args []string) (err error) {
 		return fmt.Errorf("Failed to marshal :%s", err)
 	}
 	log15.Info("Output as JSON")
-	if err := outputJSON(fmt.Sprintf("%s.json", param), resultsByteData); err != nil {
-		return fmt.Errorf("Failed to output :%s", err)
-	}
-	return nil
-}
-
-func outputJSON(filename string, binaryData []byte) error {
-	file, err := os.Create(filename)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	_, err = file.Write(binaryData)
-	if err != nil {
-		return err
-	}
+	fmt.Printf("%s\n", string(resultsByteData))
 	return nil
 }
