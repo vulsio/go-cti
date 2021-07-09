@@ -18,7 +18,7 @@ var version = "0.0.1"
 func main() {
 	var v = flag.Bool("v", false, "Show version")
 
-	if envArgs := os.Getenv("GOVAL_DICTIONARY_ARGS"); 0 < len(envArgs) {
+	if envArgs := os.Getenv("GO_CTI_ARGS"); 0 < len(envArgs) {
 		if err := flag.CommandLine.Parse(strings.Fields(envArgs)); err != nil {
 			fmt.Printf("Failed to parse ENV_VARs: %s", err)
 			os.Exit(1)
