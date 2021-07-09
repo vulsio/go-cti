@@ -128,7 +128,7 @@ func (r *RDBDriver) deleteAndInsertCti(conn *gorm.DB, records []*models.Cti) (er
 		bar.Increment()
 	}
 	bar.Finish()
-	log15.Info("CveID Metasploit Count", "count", count)
+	log15.Info("CveID mitre/cti Count", "count", count)
 	return nil
 }
 

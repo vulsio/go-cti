@@ -25,7 +25,7 @@ GO_OFF := GO111MODULE=off go
 all: build
 
 build: main.go pretest fmt
-	$(GO) build -ldflags "$(LDFLAGS)" -o go-msfdb $<
+	$(GO) build -ldflags "$(LDFLAGS)" -o go-cti $<
 
 install: main.go
 	$(GO) install -ldflags "$(LDFLAGS)"
