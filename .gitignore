@@ -26,3 +26,6 @@ cache
 
 # Output JSON file by search
 *.json
+
+# Loging files
+*.log
