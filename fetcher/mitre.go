@@ -62,6 +62,7 @@ func (c Config) FetchMitreCti() (records []*models.Cti, err error) {
 		for _, m := range matched {
 			s := strings.Split(m, ":")
 			if ignoreJSON.MatchString(s[0]) {
+				bar.Increment()
 				continue
 			}
 			path := filepath.Join(dir, s[0])
@@ -131,13 +132,13 @@ func convertToModel(cveID string, item CapecObjects) (*models.Cti, error) {
 	}
 
 	return &models.Cti{
-		Name:             item.Name,
-		Type:             item.Type,
-		Description:      item.Description,
-		CveID:            cveID,
-		Capec:            &xcapec,
-		KillChains:       kills,
-		References:       refs,
+		Name:        item.Name,
+		Type:        item.Type,
+		Description: item.Description,
+		CveID:       cveID,
+		Capec:       &xcapec,
+		KillChains:  kills,
+		References:  refs,
 		// PublishedDate:    publish,
 		// LastModifiedDate: modified,
 	}, nil
