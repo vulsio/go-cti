@@ -59,6 +59,7 @@ func (c Config) FetchMitreCti() (records []*models.Cti, err error) {
 		path := filepath.Join(dir, s[0])
 		cveID := strings.ToUpper(s[1])
 
+
 		var capec Capec
 		bytes, err := ioutil.ReadFile(path)
 		if err = json.Unmarshal(bytes, &capec); err != nil {
