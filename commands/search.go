@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"regexp"
@@ -10,9 +11,6 @@ import (
 	"github.com/spf13/viper"
 
 	"github.com/vulsio/go-cti/db"
-	//"github.com/vulsio/go-cti/fetcher"
-	//"github.com/vulsio/go-cti/git"
-	//"github.com/vulsio/go-cti/models"
 )
 
 // fetchCmd represents the fetch command
@@ -52,26 +50,22 @@ func searchCti(cmd *cobra.Command, args []string) (err error) {
 		return err
 	}
 
-	searchType := viper.GetString("type")
 	param := viper.GetString("param")
-	switch searchType {
-	case "CVE":
-		if !cveIDRegexp.Match([]byte(param)) {
-			log15.Error("Specify the search type [CVE] parameters like `--param CVE-xxxx-xxxx`")
-			return errors.New("Invalid CVE Param")
-		}
-		results := driver.GetModuleByCveID(param)
-		if len(results) == 0 {
-			log15.Error(fmt.Sprintf("No results of CVE which ID is %s", param))
-			return errors.New("No results")
-		}
-		log15.Info("Get results")
-		for _, result := range results {
-			fmt.Printf("%s\n", result.CveID)
-		}
-	default:
-		log15.Error("Specify the search type [CVE / EDB].")
-		return errors.New("Invalid Type")
+	if !cveIDRegexp.MatchString(param) {
+		log15.Error("Specify the search parameters like `--param CVE-xxxx-xxxx`")
+		return errors.New("Invalid CVE Param")
 	}
+	results := driver.GetModuleByCveID(param)
+	if len(results) == 0 {
+		log15.Info(fmt.Sprintf("No results of CVE which ID is %s", param))
+		return nil
+	}
+	log15.Info("Get results")
+	resultsByteData, err := json.Marshal(results)
+	if err != nil {
+		return fmt.Errorf("Failed to marshal :%s", err)
+	}
+	log15.Info("Output as JSON")
+	fmt.Printf("%s\n", string(resultsByteData))
 	return nil
 }

@@ -23,3 +23,9 @@ data
 cache
 .DS_Store
 .vscode
+
+# Output JSON file by search
+*.json
+
+# Loging files
+*.log

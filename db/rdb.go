@@ -119,16 +119,14 @@ func (r *RDBDriver) deleteAndInsertCti(conn *gorm.DB, records []*models.Cti) (er
 		}
 	}
 
-	var count int
 	for _, record := range records {
 		if err = tx.Create(record).Error; err != nil {
 			return fmt.Errorf("Failed to insert. err: %s", err)
 		}
-		count++
 		bar.Increment()
 	}
 	bar.Finish()
-	log15.Info("CveID Metasploit Count", "count", count)
+	log15.Info("CveID mitre/cti Count", "count", len(records))
 	return nil
 }
 
