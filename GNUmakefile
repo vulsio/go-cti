@@ -14,18 +14,16 @@
 
 SRCS = $(shell git ls-files '*.go')
 PKGS = $(shell go list ./...)
-VERSION := $(shell git describe --tags --abbrev=0)
 REVISION := $(shell git rev-parse --short HEAD)
 BUILDTIME := $(shell date "+%Y%m%d_%H%M%S")
-LDFLAGS := -X 'main.version=$(VERSION)' \
-        -X 'main.revision=$(REVISION)'
+LDFLAGS := -X 'main.Revision=$(REVISION)'
 GO := GO111MODULE=on go
 GO_OFF := GO111MODULE=off go
 
 all: build
 
 build: main.go pretest fmt
-	$(GO) build -ldflags "$(LDFLAGS)" -o go-cti $<
+	$(GO) build -a -ldflags "$(LDFLAGS)" -o go-cti $<
 
 install: main.go
 	$(GO) install -ldflags "$(LDFLAGS)"
