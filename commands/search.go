@@ -31,15 +31,11 @@ func init() {
 	RootCmd.AddCommand(searchCmd)
 
 	searchCmd.PersistentFlags().String("type", "", "All Metasploit Framework modules by CVE: CVE  |  by EDB: EDB (default: CVE)")
-	if err := viper.BindPFlag("type", searchCmd.PersistentFlags().Lookup("type")); err != nil {
-		panic(err)
-	}
+	_ = viper.BindPFlag("type", searchCmd.PersistentFlags().Lookup("type"))
 	viper.SetDefault("type", "CVE")
 
 	searchCmd.PersistentFlags().String("param", "", "All Metasploit Framework modules: None  |  by CVE: [CVE-xxxx]  | by EDB: [EDB-xxxx]  (default: None)")
-	if err := viper.BindPFlag("param", searchCmd.PersistentFlags().Lookup("param")); err != nil {
-		panic(err)
-	}
+	_ = viper.BindPFlag("param", searchCmd.PersistentFlags().Lookup("param"))
 	viper.SetDefault("param", "")
 }
 
