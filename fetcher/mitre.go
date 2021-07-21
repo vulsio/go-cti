@@ -25,7 +25,7 @@ var (
 
 const (
 	repoURL  = "https://github.com/mitre/cti.git"
-	cveRegex = `CVE-\d{1,}-\d{1,}`
+	cveRegex = `CVE-[0-9]{1,}-[0-9]{1,}`
 )
 
 // Config : Config parameters used in Git.
