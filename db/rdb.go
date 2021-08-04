@@ -119,15 +119,31 @@ func (r *RDBDriver) deleteAndInsertCti(conn *gorm.DB, records []*models.Cti) (er
 		}
 	}
 
-	var count int
 	for _, record := range records {
 		if err = tx.Create(record).Error; err != nil {
 			return fmt.Errorf("Failed to insert. err: %s", err)
 		}
-		count++
 		bar.Increment()
 	}
 	bar.Finish()
-	log15.Info("CveID Metasploit Count", "count", count)
+	log15.Info("CveID mitre/cti Count", "count", len(records))
 	return nil
+}
+
+// GetModuleByCveID :
+func (r *RDBDriver) GetModuleByCveID(cveID string) []*models.Cti {
+	cti := []*models.Cti{}
+	var errs gorm.Errors
+
+	errs = errs.Add(r.conn.Where(&models.Cti{CveID: cveID}).Find(&cti).Error)
+	for _, m := range cti {
+		errs = errs.Add(r.conn.Model(&m).Related(&m.References, "references").Error)
+	}
+
+	for _, e := range errs.GetErrors() {
+		if !gorm.IsRecordNotFoundError(e) {
+			log15.Error("Failed to get module info by CVE", "err", e)
+		}
+	}
+	return cti
 }
