@@ -12,8 +12,11 @@ import (
 // Name ... Name
 const Name string = "go-cti"
 
-// Version ... Version
-var version = "0.0.1"
+// Version of go-cti
+var Version = "0.0.0"
+
+// Revision of go-cti
+var Revision string
 
 func main() {
 	var v = flag.Bool("v", false, "Show version")
@@ -25,7 +28,7 @@ func main() {
 	}
 
 	if *v {
-		fmt.Printf("%s %s \n", Name, version)
+		fmt.Printf("go-cti %s %s\n", Version, Revision)
 		os.Exit(0)
 	}
 
