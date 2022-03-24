@@ -1,0 +1,3 @@
+go-cti.*
+*.sqlite3
+diff
