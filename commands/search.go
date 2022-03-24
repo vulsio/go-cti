@@ -2,15 +2,16 @@ package commands
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"regexp"
 
-	"github.com/inconshreveable/log15"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/xerrors"
 
 	"github.com/vulsio/go-cti/db"
+	"github.com/vulsio/go-cti/models"
+	"github.com/vulsio/go-cti/utils"
 )
 
 // fetchCmd represents the fetch command
@@ -18,52 +19,60 @@ var searchCmd = &cobra.Command{
 	Use:   "search",
 	Short: "Search the data of mitre/cti form DB",
 	Long:  `Search the data of mitrc/cti form DB`,
+	Args:  cobra.ExactArgs(1),
 	RunE:  searchCti,
 }
 
-var (
-	cveIDRegexp = regexp.MustCompile(`^CVE-\d{1,}-\d{1,}$`)
-)
-
 func init() {
 	RootCmd.AddCommand(searchCmd)
-
-	searchCmd.PersistentFlags().String("type", "CVE", "All Metasploit Framework modules by CVE: CVE  |  by EDB: EDB (default: CVE)")
-	_ = viper.BindPFlag("type", searchCmd.PersistentFlags().Lookup("type"))
-
-	searchCmd.PersistentFlags().String("param", "", "All Metasploit Framework modules: None  |  by CVE: [CVE-xxxx]  | by EDB: [EDB-xxxx]  (default: None)")
-	_ = viper.BindPFlag("param", searchCmd.PersistentFlags().Lookup("param"))
 }
 
-func searchCti(cmd *cobra.Command, args []string) (err error) {
+func searchCti(_ *cobra.Command, args []string) error {
+	if err := utils.SetLogger(viper.GetBool("log-to-file"), viper.GetString("log-dir"), viper.GetBool("debug"), viper.GetBool("log-json")); err != nil {
+		return xerrors.Errorf("Failed to SetLogger. err: %w", err)
+	}
+
 	driver, locked, err := db.NewDB(
 		viper.GetString("dbtype"),
 		viper.GetString("dbpath"),
 		viper.GetBool("debug-sql"),
+		db.Option{},
 	)
 	if err != nil {
 		if locked {
-			log15.Error("Failed to initialize DB. Close DB connection before fetching", "err", err)
+			return xerrors.Errorf("Failed to initialize DB. Close DB connection before fetching. err: %w", err)
 		}
-		return err
+		return xerrors.Errorf("Failed to open DB. err: %w", err)
 	}
 
-	param := viper.GetString("param")
-	if !cveIDRegexp.MatchString(param) {
-		log15.Error("Specify the search parameters like `--param CVE-xxxx-xxxx`")
-		return errors.New("Invalid CVE Param")
+	fetchMeta, err := driver.GetFetchMeta()
+	if err != nil {
+		return xerrors.Errorf("Failed to get FetchMeta from DB. err: %w", err)
 	}
-	results := driver.GetModuleByCveID(param)
-	if len(results) == 0 {
-		log15.Info(fmt.Sprintf("No results of CVE which ID is %s", param))
+	if fetchMeta.OutDated() {
+		return xerrors.Errorf("Failed to search command. err: SchemaVersion is old. SchemaVersion: %+v", map[string]uint{"latest": models.LatestSchemaVersion, "DB": fetchMeta.SchemaVersion})
+	}
+
+	matched, err := regexp.MatchString(`^CVE-[0-9]{4}-[0-9]{4,}$`, args[0])
+	if err != nil {
+		return xerrors.Errorf("Failed to search CTI. err: %w", err)
+	}
+	if !matched {
+		return xerrors.Errorf("Failed to search CTI. err: invalid argument. expected format: CVE-xxxx-xxxx, actual: %s", args[0])
+	}
+
+	ctis, err := driver.GetCtiByCveID(args[0])
+	if err != nil {
+		return xerrors.Errorf("Failed to get CTI. err: %w", err)
+	}
+	if len(ctis) == 0 {
 		return nil
 	}
-	log15.Info("Get results")
-	resultsByteData, err := json.Marshal(results)
+
+	result, err := json.MarshalIndent(ctis, "", "  ")
 	if err != nil {
-		return fmt.Errorf("Failed to marshal :%s", err)
+		return xerrors.Errorf("Failed to marshal json. err: %w", err)
 	}
-	log15.Info("Output as JSON")
-	fmt.Printf("%s\n", string(resultsByteData))
+	fmt.Printf("%s\n", string(result))
 	return nil
 }

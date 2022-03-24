@@ -16,21 +16,21 @@ SRCS = $(shell git ls-files '*.go')
 PKGS = $(shell go list ./...)
 REVISION := $(shell git rev-parse --short HEAD)
 BUILDTIME := $(shell date "+%Y%m%d_%H%M%S")
-LDFLAGS := -X 'main.Revision=$(REVISION)'
+LDFLAGS := -X 'github.com/vulsio/go-cti/config.Version=$(VERSION)' \
+	-X 'github.com/vulsio/go-cti/config.Revision=$(REVISION)'
 GO := GO111MODULE=on go
-GO_OFF := GO111MODULE=off go
 
-all: build
+all: build test
 
-build: main.go pretest fmt
+build: main.go
 	$(GO) build -a -ldflags "$(LDFLAGS)" -o go-cti $<
 
 install: main.go
 	$(GO) install -ldflags "$(LDFLAGS)"
 
 lint:
-	$(GO_OFF) get -u golang.org/x/lint/golint
-	golint $(PKGS)
+	$(GO) install github.com/mgechev/revive@latest
+	revive -config ./.revive.toml -formatter plain $(PKGS)
 
 vet:
 	echo $(PKGS) | xargs env $(GO) vet || exit;

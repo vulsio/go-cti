@@ -1,19 +1,20 @@
 package fetcher
 
 import (
-	// "bytes"
+	"bytes"
+	"crypto/md5"
+	"encoding/gob"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
 
-	"github.com/cheggaaa/pb"
-	"github.com/inconshreveable/log15"
 	"golang.org/x/xerrors"
 
+	"github.com/inconshreveable/log15"
 	"github.com/vulsio/go-cti/git"
 	"github.com/vulsio/go-cti/models"
 	"github.com/vulsio/go-cti/utils"
@@ -25,7 +26,7 @@ var (
 
 const (
 	repoURL  = "https://github.com/mitre/cti.git"
-	cveRegex = `CVE-[0-9]{1,}-[0-9]{1,}`
+	cveRegex = `CVE-[0-9]{4}-[0-9]{4,}`
 )
 
 // Config : Config parameters used in Git.
@@ -34,61 +35,67 @@ type Config struct {
 }
 
 // FetchMitreCti :
-func (c Config) FetchMitreCti() (records []*models.Cti, err error) {
+func (c Config) FetchMitreCti() ([]models.Cti, error) {
 	// Clone cyber threat repository
 	dir := filepath.Join(utils.CacheDir(), "cti")
-	updatedFiles, err := c.GitClient.CloneRepo(repoURL, dir)
-	if err != nil {
-		return nil, err
+	if _, err := c.GitClient.CloneRepo(repoURL, dir); err != nil {
+		return nil, xerrors.Errorf("Failed to GitClient.CloneRepo. err: %w", err)
 	}
-	log15.Info("Updated files", "count", len(updatedFiles))
 
 	// Get what have CVE ID
 	matched, err := c.GitClient.Grep(cveRegex, dir)
 	if err != nil {
-		return nil, err
+		return nil, xerrors.Errorf("Failed to GitClient.Grep. err: %w", err)
 	}
 
-	bar := pb.StartNew(len(matched))
+	ctiHashMap := map[string]bool{}
+	ctis := []models.Cti{}
 	for _, m := range matched {
 		s := strings.Split(m, ":")
 		if ignoreJSON.MatchString(s[0]) {
-			bar.Increment()
 			continue
 		}
 		path := filepath.Join(dir, s[0])
 		cveID := strings.ToUpper(s[1])
 
-
 		var capec Capec
-		bytes, err := ioutil.ReadFile(path)
-		if err = json.Unmarshal(bytes, &capec); err != nil {
-			return nil, err
+		b, err := os.ReadFile(path)
+		if err != nil {
+			return nil, xerrors.Errorf("Failed to read file. err: %w", err)
+		}
+		if err := json.Unmarshal(b, &capec); err != nil {
+			return nil, xerrors.Errorf("Failed to unmarshal json. err: %w", err)
 		}
 
 		for _, item := range capec.Objects {
-			record, err := convertToModel(cveID, item)
+			cti, err := convertToModel(cveID, item)
 			if err != nil {
-				return nil, xerrors.Errorf("failed to convert model: %w", err)
+				return nil, xerrors.Errorf("Failed to convert model: %w", err)
 			}
-			records = append(records, record)
-		}
-		bar.Increment()
-	}
-	bar.Finish()
 
-	return records, nil
+			var buf bytes.Buffer
+			enc := gob.NewEncoder(&buf)
+			if err := enc.Encode(cti); err != nil {
+				return nil, xerrors.Errorf("Failed to encode CTI. err: %w", err)
+			}
+			if hash := fmt.Sprintf("%s#%x", cveID, md5.Sum(buf.Bytes())); !ctiHashMap[hash] {
+				ctiHashMap[hash] = true
+				ctis = append(ctis, cti)
+			}
+		}
+	}
+
+	return ctis, nil
 }
 
-func convertToModel(cveID string, item CapecObjects) (*models.Cti, error) {
-	// publish, err := parseCtiJSONTime(item.Created)
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// modified, err := parseCtiJSONTime(item.Modified)
-	// if err != nil {
-	// 	return nil, err
-	// }
+func convertToModel(cveID string, item CapecObjects) (models.Cti, error) {
+	publish := ParsedOrDefaultTime(time.RFC3339, item.Created)
+	var modified time.Time
+	if item.Modified == "" {
+		modified = publish
+	} else {
+		modified = ParsedOrDefaultTime(time.RFC3339, item.Modified)
+	}
 
 	// Common Attack Pattern Enumeration and Classification
 	xcapec := models.Capec{}
@@ -122,27 +129,29 @@ func convertToModel(cveID string, item CapecObjects) (*models.Cti, error) {
 		refs = append(refs, ref)
 	}
 
-	return &models.Cti{
-		Name:        item.Name,
-		Type:        item.Type,
-		Description: item.Description,
-		CveID:       cveID,
-		Capec:       &xcapec,
-		KillChains:  kills,
-		References:  refs,
-		// PublishedDate:    publish,
-		// LastModifiedDate: modified,
+	return models.Cti{
+		Name:             item.Name,
+		Type:             item.Type,
+		Description:      item.Description,
+		CveID:            cveID,
+		Capec:            xcapec,
+		KillChains:       kills,
+		References:       refs,
+		PublishedDate:    publish,
+		LastModifiedDate: modified,
 	}, nil
 }
 
-func parseCtiJSONTime(strtime string) (t time.Time, err error) {
-	fmt.Println(strtime)
-	layout := "2006-01-02T15:04:05Z"
-	t, err = time.Parse(layout, strtime)
-	fmt.Println(t)
-	if err != nil {
-		return t, xerrors.Errorf("Failed to parse time, time: %s, err: %s",
-			strtime, err)
+// ParsedOrDefaultTime returns time.Parse(layout, value), or time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC) if it failed to parse
+func ParsedOrDefaultTime(layout, value string) time.Time {
+	defaultTime := time.Date(1000, time.January, 1, 0, 0, 0, 0, time.UTC)
+	if value == "" {
+		return defaultTime
 	}
-	return
+	t, err := time.Parse(layout, value)
+	if err != nil {
+		log15.Warn("Failed to parse string", "timeformat", layout, "target string", value, "err", err)
+		return defaultTime
+	}
+	return t
 }
