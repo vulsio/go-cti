@@ -1,14 +1,13 @@
 package utils
 
 import (
-	"bytes"
-	"log"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"runtime"
 
 	"github.com/inconshreveable/log15"
+	"github.com/parnurzeal/gorequest"
+	"github.com/spf13/viper"
 	"golang.org/x/xerrors"
 )
 
@@ -19,31 +18,6 @@ func CacheDir() string {
 		tmpDir = os.TempDir()
 	}
 	return filepath.Join(tmpDir, "go-cti")
-}
-
-// Exists :
-func Exists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true, nil
-	}
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	return true, err
-}
-
-// Exec :
-func Exec(command string, args []string) (string, error) {
-	cmd := exec.Command(command, args...)
-	var stdoutBuf, stderrBuf bytes.Buffer
-	cmd.Stdout = &stdoutBuf
-	cmd.Stderr = &stderrBuf
-	if err := cmd.Run(); err != nil {
-		log.Println(stderrBuf.String())
-		return "", xerrors.Errorf("failed to exec: %w", err)
-	}
-	return stdoutBuf.String(), nil
 }
 
 // GetDefaultLogDir :
@@ -96,12 +70,13 @@ func SetLogger(logToFile bool, logDir string, debug, logJSON bool) error {
 	return nil
 }
 
-// DeleteNil :
-func DeleteNil(errs []error) (new []error) {
-	for _, err := range errs {
-		if err != nil {
-			new = append(new, err)
-		}
+// FetchURL returns HTTP response body
+func FetchURL(url string) ([]byte, error) {
+	httpProxy := viper.GetString("http-proxy")
+
+	resp, body, err := gorequest.New().Proxy(httpProxy).Get(url).Type("text").EndBytes()
+	if len(err) > 0 || resp == nil || resp.StatusCode != 200 {
+		return nil, xerrors.Errorf("HTTP error. url: %s, err: %w", url, err)
 	}
-	return new
+	return body, nil
 }

@@ -18,7 +18,7 @@ type DB interface {
 	GetFetchMeta() (*models.FetchMeta, error)
 	UpsertFetchMeta(*models.FetchMeta) error
 
-	InsertCti([]models.Cti) error
+	InsertCti([]models.Cti, []models.Mapping) error
 	GetCtiByCveID(string) ([]models.Cti, error)
 	GetCtiByMultiCveID([]string) (map[string][]models.Cti, error)
 }

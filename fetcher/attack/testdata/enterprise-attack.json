@@ -1,0 +1,551 @@
+{
+  "type": "bundle",
+  "objects": [
+    {
+      "object_marking_refs": [
+        "marking-definition--fa42a846-8d90-4e51-bc29-71d5b4802168"
+      ],
+      "type": "attack-pattern",
+      "name": "OS Credential Dumping",
+      "x_mitre_data_sources": [
+        "Process: Process Creation",
+        "Process: Process Access",
+        "Command: Command Execution",
+        "File: File Access",
+        "Windows Registry: Windows Registry Key Access",
+        "Active Directory: Active Directory Object Access",
+        "Network Traffic: Network Traffic Flow",
+        "Network Traffic: Network Traffic Content",
+        "Process: OS API Execution"
+      ],
+      "x_mitre_version": "2.1",
+      "modified": "2021-10-15T19:55:01.922Z",
+      "created": "2017-05-31T21:30:19.735Z",
+      "kill_chain_phases": [
+        {
+          "kill_chain_name": "mitre-attack",
+          "phase_name": "credential-access"
+        }
+      ],
+      "id": "attack-pattern--0a3ead4e-6d47-4ccb-854c-a6a4f9d96b22",
+      "x_mitre_platforms": ["Windows", "Linux", "macOS"],
+      "x_mitre_is_subtechnique": false,
+      "x_mitre_permissions_required": ["Administrator", "SYSTEM", "root"],
+      "description": "Adversaries may attempt to dump credentials to obtain account login and credential material, normally in the form of a hash or a clear text password, from the operating system and software. Credentials can then be used to perform [Lateral Movement](https://attack.mitre.org/tactics/TA0008) and access restricted information.\n\nSeveral of the tools mentioned in associated sub-techniques may be used by both adversaries and professional security testers. Additional custom tools likely exist as well.\n",
+      "x_mitre_contributors": [
+        "Vincent Le Toux",
+        "Ed Williams, Trustwave, SpiderLabs"
+      ],
+      "x_mitre_effective_permissions": ["SYSTEM"],
+      "x_mitre_defense_bypassed": ["System Access Controls"],
+      "x_mitre_detection": "### Windows\nMonitor for unexpected processes interacting with lsass.exe.(Citation: Medium Detecting Attempts to Steal Passwords from Memory) Common credential dumpers such as [Mimikatz](https://attack.mitre.org/software/S0002) access the LSA Subsystem Service (LSASS) process by opening the process, locating the LSA secrets key, and decrypting the sections in memory where credential details are stored. Credential dumpers may also use methods for reflective [Process Injection](https://attack.mitre.org/techniques/T1055) to reduce potential indicators of malicious activity.\n\nHash dumpers open the Security Accounts Manager (SAM) on the local file system (%SystemRoot%/system32/config/SAM) or create a dump of the Registry SAM key to access stored account password hashes. Some hash dumpers will open the local file system as a device and parse to the SAM table to avoid file access defenses. Others will make an in-memory copy of the SAM table before reading hashes. Detection of compromised [Valid Accounts](https://attack.mitre.org/techniques/T1078) in-use by adversaries may help as well. \n\nOn Windows 8.1 and Windows Server 2012 R2, monitor Windows Logs for LSASS.exe creation to verify that LSASS started as a protected process.\n\nMonitor processes and command-line arguments for program execution that may be indicative of credential dumping. Remote access tools may contain built-in features or incorporate existing tools like [Mimikatz](https://attack.mitre.org/software/S0002). [PowerShell](https://attack.mitre.org/techniques/T1059/001) scripts also exist that contain credential dumping functionality, such as PowerSploit's Invoke-Mimikatz module, (Citation: Powersploit) which may require additional logging features to be configured in the operating system to collect necessary information for analysis.\n\nMonitor domain controller logs for replication requests and other unscheduled activity possibly associated with DCSync. (Citation: Microsoft DRSR Dec 2017) (Citation: Microsoft GetNCCChanges) (Citation: Samba DRSUAPI) Note: Domain controllers may not log replication requests originating from the default domain controller account. (Citation: Harmj0y DCSync Sept 2015). Also monitor for network protocols  (Citation: Microsoft DRSR Dec 2017) (Citation: Microsoft NRPC Dec 2017) and other replication requests (Citation: Microsoft SAMR) from IPs not associated with known domain controllers. (Citation: AdSecurity DCSync Sept 2015)\n\n### Linux\nTo obtain the passwords and hashes stored in memory, processes must open a maps file in the /proc filesystem for the process being analyzed. This file is stored under the path <code>/proc/<pid>/maps</code>, where the <code><pid></code> directory is the unique pid of the program being interrogated for such authentication data. The AuditD monitoring tool, which ships stock in many Linux distributions, can be used to watch for hostile processes opening this file in the proc file system, alerting on the pid, process name, and arguments of such programs.",
+      "x_mitre_impact_type": ["test"],
+      "x_mitre_network_requirements": true,
+      "x_mitre_remote_support": true,
+      "created_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "external_references": [
+        {
+          "url": "https://attack.mitre.org/techniques/T1003",
+          "external_id": "T1003",
+          "source_name": "mitre-attack"
+        },
+        {
+          "url": "https://capec.mitre.org/data/definitions/test.html",
+          "external_id": "CAPEC-test",
+          "source_name": "capec"
+        },
+        {
+          "source_name": "Medium Detecting Attempts to Steal Passwords from Memory",
+          "description": "French, D. (2018, October 2). Detecting Attempts to Steal Passwords from Memory. Retrieved October 11, 2019.",
+          "url": "https://medium.com/threatpunter/detecting-attempts-to-steal-passwords-from-memory-558f16dce4ea"
+        },
+        {
+          "source_name": "Powersploit",
+          "description": "PowerSploit. (n.d.). Retrieved December 4, 2014.",
+          "url": "https://github.com/mattifestation/PowerSploit"
+        },
+        {
+          "source_name": "Microsoft DRSR Dec 2017",
+          "description": "Microsoft. (2017, December 1). MS-DRSR Directory Replication Service (DRS) Remote Protocol. Retrieved December 4, 2017.",
+          "url": "https://msdn.microsoft.com/library/cc228086.aspx"
+        },
+        {
+          "source_name": "Microsoft GetNCCChanges",
+          "description": "Microsoft. (n.d.). IDL_DRSGetNCChanges (Opnum 3). Retrieved December 4, 2017.",
+          "url": "https://msdn.microsoft.com/library/dd207691.aspx"
+        },
+        {
+          "source_name": "Samba DRSUAPI",
+          "description": "SambaWiki. (n.d.). DRSUAPI. Retrieved December 4, 2017.",
+          "url": "https://wiki.samba.org/index.php/DRSUAPI"
+        },
+        {
+          "source_name": "Harmj0y DCSync Sept 2015",
+          "description": "Schroeder, W. (2015, September 22). Mimikatz and DCSync and ExtraSids, Oh My. Retrieved December 4, 2017.",
+          "url": "http://www.harmj0y.net/blog/redteaming/mimikatz-and-dcsync-and-extrasids-oh-my/"
+        },
+        {
+          "source_name": "Microsoft NRPC Dec 2017",
+          "description": "Microsoft. (2017, December 1). MS-NRPC - Netlogon Remote Protocol. Retrieved December 6, 2017.",
+          "url": "https://msdn.microsoft.com/library/cc237008.aspx"
+        },
+        {
+          "source_name": "Microsoft SAMR",
+          "description": "Microsoft. (n.d.). MS-SAMR Security Account Manager (SAM) Remote Protocol (Client-to-Server) - Transport. Retrieved December 4, 2017.",
+          "url": "https://msdn.microsoft.com/library/cc245496.aspx"
+        },
+        {
+          "source_name": "AdSecurity DCSync Sept 2015",
+          "description": "Metcalf, S. (2015, September 25). Mimikatz DCSync Usage, Exploitation, and Detection. Retrieved December 4, 2017.",
+          "url": "https://adsecurity.org/?p=1729"
+        }
+      ]
+    },
+    {
+      "type": "attack-pattern",
+      "modified": "2020-03-20T15:56:55.022Z",
+      "name": "/etc/passwd and /etc/shadow",
+      "x_mitre_data_sources": [
+        "Command: Command Execution",
+        "File: File Access"
+      ],
+      "x_mitre_version": "1.0",
+      "created": "2020-02-11T18:46:56.263Z",
+      "x_mitre_permissions_required": ["root"],
+      "x_mitre_platforms": ["Linux"],
+      "x_mitre_is_subtechnique": true,
+      "id": "attack-pattern--d0b4fcdb-d67d-4ed2-99ce-788b12f8c0f4",
+      "description": "Adversaries may attempt to dump the contents of <code>/etc/passwd</code> and <code>/etc/shadow</code> to enable offline password cracking. Most modern Linux operating systems use a combination of <code>/etc/passwd</code> and <code>/etc/shadow</code> to store user account information including password hashes in <code>/etc/shadow</code>. By default, <code>/etc/shadow</code> is only readable by the root user.(Citation: Linux Password and Shadow File Formats)\n\nThe Linux utility, unshadow, can be used to combine the two files in a format suited for password cracking utilities such as John the Ripper:(Citation: nixCraft - John the Ripper) <code># /usr/bin/unshadow /etc/passwd /etc/shadow > /tmp/crack.password.db</code>\n",
+      "object_marking_refs": [
+        "marking-definition--fa42a846-8d90-4e51-bc29-71d5b4802168"
+      ],
+      "kill_chain_phases": [
+        {
+          "kill_chain_name": "mitre-attack",
+          "phase_name": "credential-access"
+        }
+      ],
+      "x_mitre_detection": "The AuditD monitoring tool, which ships stock in many Linux distributions, can be used to watch for hostile processes attempting to access <code>/etc/passwd</code> and <code>/etc/shadow</code>, alerting on the pid, process name, and arguments of such programs.",
+      "created_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "external_references": [
+        {
+          "source_name": "mitre-attack",
+          "external_id": "T1003.008",
+          "url": "https://attack.mitre.org/techniques/T1003/008"
+        },
+        {
+          "source_name": "Linux Password and Shadow File Formats",
+          "description": "The Linux Documentation Project. (n.d.). Linux Password and Shadow File Formats. Retrieved February 19, 2020.",
+          "url": "https://www.tldp.org/LDP/lame/LAME/linux-admin-made-easy/shadow-file-formats.html"
+        },
+        {
+          "source_name": "nixCraft - John the Ripper",
+          "description": "Vivek Gite. (2014, September 17). Linux Password Cracking: Explain unshadow and john Commands (John the Ripper Tool). Retrieved February 19, 2020.",
+          "url": "https://www.cyberciti.biz/faq/unix-linux-password-cracking-john-the-ripper/"
+        }
+      ]
+    },
+    {
+      "object_marking_refs": [
+        "marking-definition--fa42a846-8d90-4e51-bc29-71d5b4802168"
+      ],
+      "type": "course-of-action",
+      "name": "Privileged Process Integrity",
+      "description": "Protect processes with high privileges that can be used to interact with critical system components through use of protected process light, anti-process injection defenses, or other process integrity enforcement measures.",
+      "x_mitre_version": "1.1",
+      "modified": "2020-05-20T13:13:48.900Z",
+      "id": "course-of-action--72dade3e-1cba-4182-b3b3-a77ca52f02a1",
+      "created": "2019-06-06T21:08:58.465Z",
+      "created_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "external_references": [
+        {
+          "url": "https://attack.mitre.org/mitigations/M1025",
+          "external_id": "M1025",
+          "source_name": "mitre-attack"
+        }
+      ]
+    },
+    {
+      "type": "intrusion-set",
+      "object_marking_refs": [
+        "marking-definition--fa42a846-8d90-4e51-bc29-71d5b4802168"
+      ],
+      "name": "Sowbug",
+      "x_mitre_version": "1.1",
+      "modified": "2020-03-30T02:46:16.483Z",
+      "created_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "aliases": ["Sowbug"],
+      "id": "intrusion-set--d1acfbb3-647b-4723-9154-800ec119006e",
+      "description": "[Sowbug](https://attack.mitre.org/groups/G0054) is a threat group that has conducted targeted attacks against organizations in South America and Southeast Asia, particularly government entities, since at least 2015. (Citation: Symantec Sowbug Nov 2017)",
+      "x_mitre_contributors": ["Alan Neville, @abnev"],
+      "created": "2018-01-16T16:13:52.465Z",
+      "external_references": [
+        {
+          "url": "https://attack.mitre.org/groups/G0054",
+          "external_id": "G0054",
+          "source_name": "mitre-attack"
+        },
+        {
+          "description": "(Citation: Symantec Sowbug Nov 2017)",
+          "source_name": "Sowbug"
+        },
+        {
+          "source_name": "Symantec Sowbug Nov 2017",
+          "description": "Symantec Security Response. (2017, November 7). Sowbug: Cyber espionage group targets South American and Southeast Asian governments. Retrieved November 16, 2017.",
+          "url": "https://www.symantec.com/connect/blogs/sowbug-cyber-espionage-group-targets-south-american-and-southeast-asian-governments"
+        }
+      ]
+    },
+    {
+      "object_marking_refs": [
+        "marking-definition--fa42a846-8d90-4e51-bc29-71d5b4802168"
+      ],
+      "type": "malware",
+      "name": "HOMEFRY",
+      "x_mitre_aliases": ["HOMEFRY"],
+      "x_mitre_version": "1.1",
+      "modified": "2020-03-30T16:47:38.393Z",
+      "created": "2018-04-18T17:59:24.739Z",
+      "x_mitre_platforms": ["Windows"],
+      "id": "malware--7451bcf9-e6e6-4a70-bc3d-1599173d0035",
+      "description": "[HOMEFRY](https://attack.mitre.org/software/S0232) is a 64-bit Windows password dumper/cracker that has previously been used in conjunction with other [Leviathan](https://attack.mitre.org/groups/G0065) backdoors. (Citation: FireEye Periscope March 2018)",
+      "labels": ["malware"],
+      "created_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "external_references": [
+        {
+          "url": "https://attack.mitre.org/software/S0232",
+          "external_id": "S0232",
+          "source_name": "mitre-attack"
+        },
+        {
+          "description": "(Citation: FireEye Periscope March 2018)",
+          "source_name": "HOMEFRY"
+        },
+        {
+          "source_name": "FireEye Periscope March 2018",
+          "description": "FireEye. (2018, March 16). Suspected Chinese Cyber Espionage Group (TEMP.Periscope) Targeting U.S. Engineering and Maritime Industries. Retrieved April 11, 2018.",
+          "url": "https://www.fireeye.com/blog/threat-research/2018/03/suspected-chinese-espionage-group-targeting-maritime-and-engineering-industries.html"
+        }
+      ]
+    },
+    {
+      "object_marking_refs": [
+        "marking-definition--fa42a846-8d90-4e51-bc29-71d5b4802168"
+      ],
+      "type": "tool",
+      "name": "Pupy",
+      "x_mitre_aliases": ["Pupy"],
+      "x_mitre_version": "1.2",
+      "modified": "2020-05-13T22:57:00.921Z",
+      "created": "2018-04-18T17:59:24.739Z",
+      "x_mitre_platforms": ["Linux", "Windows", "macOS", "Android"],
+      "id": "tool--cb69b20d-56d0-41ab-8440-4a4b251614d4",
+      "description": "[Pupy](https://attack.mitre.org/software/S0192) is an open source, cross-platform (Windows, Linux, OSX, Android) remote administration and post-exploitation tool. (Citation: GitHub Pupy) It is written in Python and can be generated as a payload in several different ways (Windows exe, Python file, PowerShell oneliner/file, Linux elf, APK, Rubber Ducky, etc.). (Citation: GitHub Pupy) [Pupy](https://attack.mitre.org/software/S0192) is publicly available on GitHub. (Citation: GitHub Pupy)",
+      "labels": ["tool"],
+      "created_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "external_references": [
+        {
+          "url": "https://attack.mitre.org/software/S0192",
+          "external_id": "S0192",
+          "source_name": "mitre-attack"
+        },
+        {
+          "url": "https://github.com/n1nj4sec/pupy",
+          "description": "Nicolas Verdier. (n.d.). Retrieved January 29, 2018.",
+          "source_name": "GitHub Pupy"
+        }
+      ]
+    },
+    {
+      "object_marking_refs": [
+        "marking-definition--fa42a846-8d90-4e51-bc29-71d5b4802168"
+      ],
+      "modified": "2021-10-20T15:05:19.272195Z",
+      "id": "x-mitre-data-component--3d20385b-24ef-40e1-9f56-f39750379077",
+      "description": "Birth of a new running process (ex: Sysmon EID 1 or Windows EID 4688)",
+      "x_mitre_version": "1.0",
+      "x_mitre_data_source_ref": "x-mitre-data-source--e8b8ede7-337b-4c0c-8c32-5c7872c1ee22",
+      "created_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "name": "Process Creation",
+      "created": "2021-10-20T15:05:19.272195Z",
+      "type": "x-mitre-data-component"
+    },
+    {
+      "object_marking_refs": [
+        "marking-definition--fa42a846-8d90-4e51-bc29-71d5b4802168"
+      ],
+      "modified": "2021-11-10T09:30:48.697770Z",
+      "name": "Process",
+      "x_mitre_version": "1.0",
+      "created_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "type": "x-mitre-data-source",
+      "x_mitre_platforms": ["Windows", "Linux", "macOS"],
+      "id": "x-mitre-data-source--e8b8ede7-337b-4c0c-8c32-5c7872c1ee22",
+      "description": "Instances of computer programs that are being executed by at least one thread. Processes have memory space for process executables, loaded modules (DLLs or shared libraries), and allocated memory regions containing everything from user input to application-specific data structures(Citation: Microsoft Processes and Threads)",
+      "x_mitre_collection_layers": ["Host"],
+      "x_mitre_contributors": ["Center for Threat-Informed Defense (CTID)"],
+      "created": "2021-10-20T15:05:19.272143Z",
+      "external_references": [
+        {
+          "url": "https://attack.mitre.org/datasources/DS0009",
+          "external_id": "DS0009",
+          "source_name": "mitre-attack"
+        },
+        {
+          "url": "https://docs.microsoft.com/en-us/windows/win32/procthread/processes-and-threads",
+          "description": "Microsoft. (2018, May 31). Processes and Threads. Retrieved September 28, 2021.",
+          "source_name": "Microsoft Processes and Threads"
+        }
+      ]
+    },
+    {
+      "object_marking_refs": [
+        "marking-definition--fa42a846-8d90-4e51-bc29-71d5b4802168"
+      ],
+      "type": "x-mitre-tactic",
+      "name": "Credential Access",
+      "description": "The adversary is trying to steal account names and passwords.\n\nCredential Access consists of techniques for stealing credentials like account names and passwords. Techniques used to get credentials include keylogging or credential dumping. Using legitimate credentials can give adversaries access to systems, make them harder to detect, and provide the opportunity to create more accounts to help achieve their goals.",
+      "x_mitre_shortname": "credential-access",
+      "modified": "2019-07-19T17:43:41.967Z",
+      "id": "x-mitre-tactic--2558fd61-8c75-4730-94c4-11926db2a263",
+      "created": "2018-10-17T00:14:20.652Z",
+      "created_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "external_references": [
+        {
+          "source_name": "mitre-attack",
+          "external_id": "TA0006",
+          "url": "https://attack.mitre.org/tactics/TA0006"
+        }
+      ]
+    },
+    {
+      "object_marking_refs": [
+        "marking-definition--fa42a846-8d90-4e51-bc29-71d5b4802168"
+      ],
+      "type": "relationship",
+      "id": "relationship--a6f27258-cf6a-4d75-a3f0-5de085d528d2",
+      "description": "\nOn Windows 8.1 and Windows Server 2012 R2, enable Protected Process Light for LSA.(Citation: Microsoft LSA)",
+      "target_ref": "attack-pattern--0a3ead4e-6d47-4ccb-854c-a6a4f9d96b22",
+      "modified": "2021-07-20T23:03:00.799Z",
+      "source_ref": "course-of-action--72dade3e-1cba-4182-b3b3-a77ca52f02a1",
+      "created_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "relationship_type": "mitigates",
+      "created": "2019-07-17T15:45:37.529Z",
+      "external_references": [
+        {
+          "source_name": "Microsoft LSA",
+          "description": "Microsoft. (2013, July 31). Configuring Additional LSA Protection. Retrieved February 13, 2015.",
+          "url": "https://technet.microsoft.com/en-us/library/dn408187.aspx"
+        }
+      ]
+    },
+    {
+      "object_marking_refs": [
+        "marking-definition--fa42a846-8d90-4e51-bc29-71d5b4802168"
+      ],
+      "type": "relationship",
+      "id": "relationship--d93265a6-1f92-472b-9e47-48b7863d8171",
+      "description": "[Sowbug](https://attack.mitre.org/groups/G0054) has used credential dumping tools.(Citation: Symantec Sowbug Nov 2017)",
+      "target_ref": "attack-pattern--0a3ead4e-6d47-4ccb-854c-a6a4f9d96b22",
+      "modified": "2019-03-25T16:57:02.775Z",
+      "source_ref": "intrusion-set--d1acfbb3-647b-4723-9154-800ec119006e",
+      "created_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "relationship_type": "uses",
+      "created": "2018-01-16T16:13:52.465Z",
+      "external_references": [
+        {
+          "source_name": "Symantec Sowbug Nov 2017",
+          "description": "Symantec Security Response. (2017, November 7). Sowbug: Cyber espionage group targets South American and Southeast Asian governments. Retrieved November 16, 2017.",
+          "url": "https://www.symantec.com/connect/blogs/sowbug-cyber-espionage-group-targets-south-american-and-southeast-asian-governments"
+        }
+      ]
+    },
+    {
+      "object_marking_refs": [
+        "marking-definition--fa42a846-8d90-4e51-bc29-71d5b4802168"
+      ],
+      "type": "relationship",
+      "id": "relationship--7ad1bbdf-4a00-426a-b130-fb4425ad2622",
+      "description": "[HOMEFRY](https://attack.mitre.org/software/S0232) can perform credential dumping.(Citation: FireEye Periscope March 2018)",
+      "target_ref": "attack-pattern--0a3ead4e-6d47-4ccb-854c-a6a4f9d96b22",
+      "modified": "2019-06-07T15:40:16.254Z",
+      "source_ref": "malware--7451bcf9-e6e6-4a70-bc3d-1599173d0035",
+      "created_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "relationship_type": "uses",
+      "created": "2018-04-18T17:59:24.739Z",
+      "external_references": [
+        {
+          "url": "https://www.fireeye.com/blog/threat-research/2018/03/suspected-chinese-espionage-group-targeting-maritime-and-engineering-industries.html",
+          "description": "FireEye. (2018, March 16). Suspected Chinese Cyber Espionage Group (TEMP.Periscope) Targeting U.S. Engineering and Maritime Industries. Retrieved April 11, 2018.",
+          "source_name": "FireEye Periscope March 2018"
+        }
+      ]
+    },
+    {
+      "object_marking_refs": [
+        "marking-definition--fa42a846-8d90-4e51-bc29-71d5b4802168"
+      ],
+      "type": "relationship",
+      "id": "relationship--d17517a1-f941-46a0-bcb6-d2a5b94cb24b",
+      "description": "[Pupy](https://attack.mitre.org/software/S0192) can obtain a list of SIDs and provide the option for selecting process tokens to impersonate.(Citation: GitHub Pupy)",
+      "target_ref": "attack-pattern--0a3ead4e-6d47-4ccb-854c-a6a4f9d96b22",
+      "modified": "2020-03-16T17:14:24.367Z",
+      "source_ref": "tool--cb69b20d-56d0-41ab-8440-4a4b251614d4",
+      "created_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "relationship_type": "uses",
+      "created": "2018-04-18T17:59:24.739Z",
+      "external_references": [
+        {
+          "source_name": "GitHub Pupy",
+          "description": "Nicolas Verdier. (n.d.). Retrieved January 29, 2018.",
+          "url": "https://github.com/n1nj4sec/pupy"
+        }
+      ]
+    },
+    {
+      "object_marking_refs": [
+        "marking-definition--fa42a846-8d90-4e51-bc29-71d5b4802168"
+      ],
+      "type": "relationship",
+      "id": "relationship--fe061ca4-3182-49b7-a70c-96c58e19d9bc",
+      "target_ref": "attack-pattern--0a3ead4e-6d47-4ccb-854c-a6a4f9d96b22",
+      "modified": "2020-02-11T18:46:56.347Z",
+      "source_ref": "attack-pattern--d0b4fcdb-d67d-4ed2-99ce-788b12f8c0f4",
+      "created_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "relationship_type": "subtechnique-of",
+      "created": "2020-02-11T18:46:56.347Z"
+    },
+    {
+      "object_marking_refs": [
+        "marking-definition--fa42a846-8d90-4e51-bc29-71d5b4802168"
+      ],
+      "modified": "2021-11-10T09:30:48.733086Z",
+      "id": "relationship--2a25ebc1-6c8e-4fd6-8ce1-339f0de199f0",
+      "target_ref": "attack-pattern--0a3ead4e-6d47-4ccb-854c-a6a4f9d96b22",
+      "source_ref": "x-mitre-data-component--3d20385b-24ef-40e1-9f56-f39750379077",
+      "created_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "relationship_type": "detects",
+      "created": "2021-11-10T09:30:48.733086Z",
+      "type": "relationship"
+    },
+    {
+      "object_marking_refs": [
+        "marking-definition--fa42a846-8d90-4e51-bc29-71d5b4802168"
+      ],
+      "type": "relationship",
+      "id": "relationship--8dfa86a7-1b39-4457-bd41-c1ff62685711",
+      "target_ref": "attack-pattern--0a3ead4e-6d47-4ccb-854c-a6a4f9d96b22",
+      "modified": "2020-01-24T18:50:29.218Z",
+      "source_ref": "attack-pattern--6e6845c2-347a-4a6f-a2d1-b74a18ebd352",
+      "created_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "relationship_type": "revoked-by",
+      "created": "2020-01-24T18:50:29.218Z"
+    },
+    {
+      "object_marking_refs": [
+        "marking-definition--fa42a846-8d90-4e51-bc29-71d5b4802168"
+      ],
+      "type": "relationship",
+      "id": "relationship--ae8d9f3e-9243-4702-a305-e4b53cd32351",
+      "target_ref": "attack-pattern--0a3ead4e-6d47-4ccb-854c-a6a4f9d96b22",
+      "modified": "2019-12-03T14:15:27.693Z",
+      "source_ref": "attack-pattern--8faedf87-dceb-4c35-b2a2-7286f59a3bc3",
+      "created_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "relationship_type": "subtechnique-of",
+      "created": "2019-12-03T14:15:27.693Z"
+    },
+    {
+      "type": "attack-pattern",
+      "modified": "2020-01-24T18:50:28.846Z",
+      "name": "LSASS Driver",
+      "created": "2018-01-16T16:13:52.465Z",
+      "id": "attack-pattern--6e6845c2-347a-4a6f-a2d1-b74a18ebd352",
+      "revoked": true,
+      "external_references": [
+        {
+          "url": "https://attack.mitre.org/techniques/T1177",
+          "external_id": "T1177",
+          "source_name": "mitre-attack"
+        },
+        {
+          "source_name": "Microsoft Security Subsystem",
+          "description": "Microsoft. (n.d.). Security Subsystem Architecture. Retrieved November 27, 2017.",
+          "url": "https://technet.microsoft.com/library/cc961760.aspx"
+        },
+        {
+          "source_name": "Microsoft LSA Protection Mar 2014",
+          "description": "Microsoft. (2014, March 12). Configuring Additional LSA Protection. Retrieved November 27, 2017.",
+          "url": "https://technet.microsoft.com/library/dn408187.aspx"
+        },
+        {
+          "source_name": "TechNet Autoruns",
+          "description": "Russinovich, M. (2016, January 4). Autoruns for Windows v13.51. Retrieved June 6, 2016.",
+          "url": "https://technet.microsoft.com/en-us/sysinternals/bb963902"
+        },
+        {
+          "source_name": "Microsoft DLL Security",
+          "description": "Microsoft. (n.d.). Dynamic-Link Library Security. Retrieved November 27, 2017.",
+          "url": "https://msdn.microsoft.com/library/windows/desktop/ff919712.aspx"
+        }
+      ]
+    },
+    {
+      "object_marking_refs": [
+        "marking-definition--fa42a846-8d90-4e51-bc29-71d5b4802168"
+      ],
+      "type": "attack-pattern",
+      "name": "Launchd",
+      "x_mitre_data_sources": [
+        "Scheduled Job: Scheduled Job Creation",
+        "Command: Command Execution",
+        "File: File Modification",
+        "Process: Process Creation"
+      ],
+      "x_mitre_version": "1.0",
+      "modified": "2021-10-07T21:38:03.610Z",
+      "created": "2019-12-03T14:15:27.452Z",
+      "kill_chain_phases": [
+        {
+          "kill_chain_name": "mitre-attack",
+          "phase_name": "execution"
+        },
+        {
+          "kill_chain_name": "mitre-attack",
+          "phase_name": "persistence"
+        },
+        {
+          "kill_chain_name": "mitre-attack",
+          "phase_name": "privilege-escalation"
+        }
+      ],
+      "x_mitre_deprecated": true,
+      "id": "attack-pattern--8faedf87-dceb-4c35-b2a2-7286f59a3bc3",
+      "x_mitre_platforms": ["macOS"],
+      "x_mitre_is_subtechnique": true,
+      "x_mitre_permissions_required": ["root"],
+      "description": "This technique is deprecated due to the inaccurate usage. The report cited did not provide technical detail as to how the malware interacted directly with launchd rather than going through known services. Other system services are used to interact with launchd rather than launchd being used by itself. \n\nAdversaries may abuse the <code>Launchd</code> daemon to perform task scheduling for initial or recurring execution of malicious code. The <code>launchd</code> daemon, native to macOS, is responsible for loading and maintaining services within the operating system. This process loads the parameters for each launch-on-demand system-level daemon from the property list (plist) files found in <code>/System/Library/LaunchDaemons</code> and <code>/Library/LaunchDaemons</code> (Citation: AppleDocs Launch Agent Daemons). These LaunchDaemons have property list files which point to the executables that will be launched (Citation: Methods of Mac Malware Persistence).\n\nAn adversary may use the <code>launchd</code> daemon in macOS environments to schedule new executables to run at system startup or on a scheduled basis for persistence. <code>launchd</code> can also be abused to run a process under the context of a specified account. Daemons, such as <code>launchd</code>, run with the permissions of the root user account, and will operate regardless of which user account is logged in.",
+      "x_mitre_remote_support": false,
+      "x_mitre_detection": "Monitor scheduled task creation from common utilities using command-line invocation. Legitimate scheduled tasks may be created during installation of new software or through system administration functions. Look for changes to tasks that do not correlate with known software, patch cycles, etc. \n\nSuspicious program execution through scheduled tasks may show up as outlier processes that have not been seen before when compared against historical data. Data and events should not be viewed in isolation, but as part of a chain of behavior that could lead to other activities, such as network connections made for Command and Control, learning details about the environment through Discovery, and Lateral Movement.",
+      "created_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "external_references": [
+        {
+          "url": "https://attack.mitre.org/techniques/T1053/004",
+          "external_id": "T1053.004",
+          "source_name": "mitre-attack"
+        },
+        {
+          "source_name": "AppleDocs Launch Agent Daemons",
+          "description": "Apple. (n.d.). Creating Launch Daemons and Agents. Retrieved July 10, 2017.",
+          "url": "https://developer.apple.com/library/content/documentation/MacOSX/Conceptual/BPSystemStartup/Chapters/CreatingLaunchdJobs.html"
+        },
+        {
+          "source_name": "Methods of Mac Malware Persistence",
+          "description": "Patrick Wardle. (2014, September). Methods of Malware Persistence on Mac OS X. Retrieved July 5, 2017.",
+          "url": "https://www.virusbulletin.com/uploads/pdf/conference/vb2014/VB2014-Wardle.pdf"
+        }
+      ]
+    }
+  ],
+  "id": "bundle--a76f9951-184a-4d17-8103-a9cc3be4a1b7",
+  "spec_version": "2.0"
+}

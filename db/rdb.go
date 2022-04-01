@@ -16,6 +16,7 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"gorm.io/gorm/logger"
 
 	"github.com/vulsio/go-cti/config"
@@ -110,10 +111,25 @@ func (r *RDBDriver) MigrateDB() error {
 	if err := r.conn.AutoMigrate(
 		&models.FetchMeta{},
 
+		&models.Mapping{},
+		&models.CtiID{},
+
 		&models.Cti{},
-		&models.Capec{},
-		&models.KillChain{},
 		&models.Reference{},
+		&models.Mitigation{},
+
+		&models.MitreAttack{},
+		&models.CapecID{},
+		&models.DataSource{},
+		&models.Procedure{},
+		&models.SubTechnique{},
+
+		&models.Capec{},
+		&models.AttackID{},
+		&models.Relationship{},
+		&models.SkillRequired{},
+		&models.Consequence{},
+		&models.RelatedWeakness{},
 	); err != nil {
 		return xerrors.Errorf("Failed to migrate. err: %w", err)
 	}
@@ -166,13 +182,11 @@ func (r *RDBDriver) UpsertFetchMeta(fetchMeta *models.FetchMeta) error {
 }
 
 // InsertCti :
-func (r *RDBDriver) InsertCti(records []models.Cti) (err error) {
-	log15.Info("Inserting Threat Intelligences having CVEs...")
-	return r.deleteAndInsertCti(r.conn, records)
+func (r *RDBDriver) InsertCti(ctis []models.Cti, mappings []models.Mapping) (err error) {
+	return r.deleteAndInsertCti(r.conn, ctis, mappings)
 }
 
-func (r *RDBDriver) deleteAndInsertCti(conn *gorm.DB, records []models.Cti) (err error) {
-	bar := pb.StartNew(len(records))
+func (r *RDBDriver) deleteAndInsertCti(conn *gorm.DB, ctis []models.Cti, mappings []models.Mapping) (err error) {
 	tx := conn.Begin()
 	defer func() {
 		if err != nil {
@@ -183,17 +197,15 @@ func (r *RDBDriver) deleteAndInsertCti(conn *gorm.DB, records []models.Cti) (err
 	}()
 
 	// Delete all old records
-	if err := tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(models.Capec{}).Error; err != nil {
-		return xerrors.Errorf("Failed to delete old records. err: %w", err)
-	}
-	if err := tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(models.KillChain{}).Error; err != nil {
-		return xerrors.Errorf("Failed to delete old records. err: %w", err)
-	}
-	if err := tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(models.Reference{}).Error; err != nil {
-		return xerrors.Errorf("Failed to delete old records. err: %w", err)
-	}
-	if err := tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(models.Cti{}).Error; err != nil {
-		return xerrors.Errorf("Failed to delete old records. err: %w", err)
+	for _, table := range []interface{}{
+		models.RelatedWeakness{}, models.Consequence{}, models.SkillRequired{}, models.Relationship{}, models.Capec{},
+		models.SubTechnique{}, models.DataSource{}, models.Procedure{}, models.MitreAttack{},
+		models.Mitigation{}, models.Reference{}, models.Cti{},
+		models.CtiID{}, models.Mapping{},
+	} {
+		if err := tx.Session(&gorm.Session{AllowGlobalUpdate: true}).Unscoped().Delete(table).Error; err != nil {
+			return xerrors.Errorf("Failed to delete old records. err: %w", err)
+		}
 	}
 
 	batchSize := viper.GetInt("batch-size")
@@ -201,28 +213,81 @@ func (r *RDBDriver) deleteAndInsertCti(conn *gorm.DB, records []models.Cti) (err
 		return xerrors.New("Failed to set batch-size. err: batch-size option is not set properly")
 	}
 
-	for idx := range chunkSlice(len(records), batchSize) {
-		if err = tx.Create(records[idx.From:idx.To]).Error; err != nil {
+	log15.Info("Inserting Cyber Threat Intelligences...")
+	bar := pb.StartNew(len(ctis))
+	for idx := range chunkSlice(len(ctis), batchSize) {
+		if err = tx.Create(ctis[idx.From:idx.To]).Error; err != nil {
 			return xerrors.Errorf("Failed to insert. err: %w", err)
 		}
 		bar.Add(idx.To - idx.From)
 	}
 	bar.Finish()
+
+	log15.Info("Inserting CVE-ID to CTI-ID Mappings...")
+	bar = pb.StartNew(len(mappings))
+	for idx := range chunkSlice(len(mappings), batchSize) {
+		if err = tx.Create(mappings[idx.From:idx.To]).Error; err != nil {
+			return xerrors.Errorf("Failed to insert. err: %w", err)
+		}
+		bar.Add(idx.To - idx.From)
+	}
+	bar.Finish()
+
 	return nil
 }
 
 // GetCtiByCveID :
 func (r *RDBDriver) GetCtiByCveID(cveID string) ([]models.Cti, error) {
-	ctis := []models.Cti{}
+	mappings := []models.Mapping{}
 	if err := r.conn.
-		Preload("Capec").
-		Preload("KillChains").
-		Preload("References").
-		Where(&models.Cti{CveID: cveID}).
-		Find(&ctis).Error; err != nil {
-		return nil, xerrors.Errorf("Failed to get CTI by CVE-ID. err: %w", err)
+		Preload("CtiIDs").
+		Where(&models.Mapping{CveID: cveID}).
+		Find(&mappings).Error; err != nil {
+		return nil, xerrors.Errorf("Failed to get CTI-IDs by CVE-ID. err: %w", err)
 	}
-	return ctis, nil
+	if len(mappings) == 0 {
+		return []models.Cti{}, nil
+	}
+
+	allCTIs := []models.Cti{}
+	for _, mapping := range mappings {
+		for _, ctiID := range mapping.CtiIDs {
+			ctis := []models.Cti{}
+			if err := r.conn.
+				Preload("References").
+				Preload("Mitigations").
+				Where(&models.Cti{CtiID: ctiID.CtiID}).
+				Find(&ctis).Error; err != nil {
+				return nil, xerrors.Errorf("Failed to get CTI by CVE-ID. err: %w", err)
+			}
+			for i := range ctis {
+				switch ctis[i].Type {
+				case models.MitreAttackType:
+					if err := r.conn.
+						Preload(clause.Associations).
+						Where(&models.MitreAttack{CtiID: ctis[i].ID}).
+						Take(&ctis[i].MitreAttack).Error; err != nil {
+						if errors.Is(err, gorm.ErrRecordNotFound) {
+							return nil, xerrors.Errorf("Failed to get MitreAttack. DB relationship may be broken, use `$ go-cti fetch threat` to recreate DB. err: %w", err)
+						}
+						return nil, xerrors.Errorf("Failed to get MitreAttack. err: %w", err)
+					}
+				case models.CAPECType:
+					if err := r.conn.
+						Preload(clause.Associations).
+						Where(&models.Capec{CtiID: ctis[i].ID}).
+						Take(&ctis[i].Capec).Error; err != nil {
+						if errors.Is(err, gorm.ErrRecordNotFound) {
+							return nil, xerrors.Errorf("Failed to get Capec. DB relationship may be broken, use `$ go-cti fetch threat` to recreate DB. err: %w", err)
+						}
+						return nil, xerrors.Errorf("Failed to get Capec. err: %w", err)
+					}
+				}
+			}
+			allCTIs = append(allCTIs, ctis...)
+		}
+	}
+	return allCTIs, nil
 }
 
 // GetCtiByMultiCveID :

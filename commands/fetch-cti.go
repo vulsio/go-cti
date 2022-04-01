@@ -10,7 +10,6 @@ import (
 
 	"github.com/vulsio/go-cti/db"
 	"github.com/vulsio/go-cti/fetcher"
-	"github.com/vulsio/go-cti/git"
 	"github.com/vulsio/go-cti/models"
 	"github.com/vulsio/go-cti/utils"
 )
@@ -51,16 +50,15 @@ func fetchMitreCti(_ *cobra.Command, _ []string) (err error) {
 		return xerrors.Errorf("Failed to upsert FetchMeta to DB. dbpath: %s, err: %w", viper.GetString("dbpath"), err)
 	}
 
-	log15.Info("Fetching mitre/cti")
-	fc := fetcher.Config{GitClient: git.Config{}}
-	var ctis []models.Cti
-	if ctis, err = fc.FetchMitreCti(); err != nil {
-		return xerrors.Errorf("Failed to fetch mitre/cti. err: %w", err)
+	log15.Info("Fetching Cyber Threat Intelligence and CVE-ID to CTI-ID Mappings")
+	ctis, mappings, err := fetcher.FetchCti()
+	if err != nil {
+		return xerrors.Errorf("Failed to fetch Cyber Threat Intelligence. err: %w", err)
 	}
-	log15.Info("Cyber Threat Intelligence with CVEs", "count", len(ctis))
+	log15.Info("Fetched Cyber Threat Intelligence and CVE-ID to CTI-ID Mappings", "ctis", len(ctis), "mappings", len(mappings))
 
-	log15.Info("Insert Cyber Threat Intelligences info into go-cti.", "db", driver.Name())
-	if err := driver.InsertCti(ctis); err != nil {
+	log15.Info("Insert Cyber Threat Intelligences and CVE-ID to CTI-ID Mappings into go-cti.", "db", driver.Name())
+	if err := driver.InsertCti(ctis, mappings); err != nil {
 		return xerrors.Errorf("Failed to insert. dbpath: %s, err: %w", viper.GetString("dbpath"), err)
 	}
 
