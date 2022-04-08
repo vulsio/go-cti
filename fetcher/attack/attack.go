@@ -15,6 +15,7 @@ import (
 
 const attackURL = "https://raw.githubusercontent.com/mitre/cti/master/enterprise-attack/enterprise-attack.json"
 
+// Fetch MITRE ATT&CK data
 func Fetch() ([]models.Cti, error) {
 	log15.Info("Fetching MITRE ATT&CK...")
 

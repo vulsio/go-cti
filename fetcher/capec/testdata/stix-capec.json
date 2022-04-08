@@ -326,7 +326,7 @@
         "None: No specialized resources are required to execute this type of attack. The ability to access the target is required."
       ],
       "x_capec_skills_required": {
-        "Low": "Adversary can leverage privileged features they already have access to without additional effort or skill. Adversary is only required to have access to an account with improper priveleges."
+        "Low": "Adversary can leverage privileged features they already have access to without additional effort or skill. Adversary is only required to have access to an account with improper privileges."
       },
       "x_capec_status": "Draft",
       "x_capec_typical_severity": "Medium",

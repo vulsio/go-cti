@@ -15,6 +15,7 @@ import (
 
 const capecURL = "https://raw.githubusercontent.com/mitre/cti/master/capec/2.1/stix-capec.json"
 
+// Fetch CAPEC data
 func Fetch() ([]models.Cti, error) {
 	log15.Info("Fetching CAPEC...")
 

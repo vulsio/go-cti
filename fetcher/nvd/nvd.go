@@ -16,6 +16,7 @@ import (
 
 const nvdURLFormat = "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-%s.json.gz"
 
+// Fetch NVD CVE data
 func Fetch() (map[string][]string, error) {
 	years := []string{"recent", "modified"}
 	for y := 2002; y <= time.Now().Year(); y++ {

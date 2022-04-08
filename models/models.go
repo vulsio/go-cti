@@ -26,18 +26,20 @@ func (f FetchMeta) OutDated() bool {
 type CTIType string
 
 var (
-	// MitreATTACKType :
+	// MitreAttackType :
 	MitreAttackType CTIType = "MITRE-ATTACK"
 	// CAPECType :
 	CAPECType CTIType = "CAPEC"
 )
 
+// Mapping :
 type Mapping struct {
 	ID     int64   `json:"-"`
 	CveID  string  `gorm:"type:varchar(255);index:idx_mapping_cve_id" json:"cve_id"`
 	CtiIDs []CtiID `json:"cti_ids"`
 }
 
+// CtiID :
 type CtiID struct {
 	ID        int64  `json:"-"`
 	MappingID int64  `json:"-"`
@@ -162,7 +164,7 @@ type Relationship struct {
 	Relation string `gorm:"type:varchar(255)" json:"relation"`
 }
 
-// Relationship is Child model of Capec
+// SkillRequired is Child model of Capec
 type SkillRequired struct {
 	ID      int64  `json:"-"`
 	CapecID int64  `gorm:"index:idx_skill_required_capec_id" json:"-"`

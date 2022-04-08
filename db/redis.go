@@ -174,6 +174,7 @@ func (r *RedisDriver) UpsertFetchMeta(fetchMeta *models.FetchMeta) error {
 	return r.conn.HSet(context.Background(), fetchMetaKey, map[string]interface{}{"Revision": config.Revision, "SchemaVersion": models.LatestSchemaVersion, "LastFetchedAt": fetchMeta.LastFetchedAt}).Err()
 }
 
+// InsertCti :
 func (r *RedisDriver) InsertCti(ctis []models.Cti, mappings []models.Mapping) error {
 	ctx := context.Background()
 	batchSize := viper.GetInt("batch-size")

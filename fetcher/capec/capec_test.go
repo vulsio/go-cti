@@ -119,7 +119,7 @@ func TestParse(t *testing.T) {
 						Prerequisites:       "The target must have misconfigured their access control mechanisms such that sensitive information, which should only be accessible to more trusted users, remains accessible to less trusted users., The adversary must have access to the target, albeit with an account that is less privileged than would be appropriate for the targeted resources.",
 						ResourcesRequired:   "None: No specialized resources are required to execute this type of attack. The ability to access the target is required.",
 						SkillsRequired: []models.SkillRequired{
-							{Skill: "Low: Adversary can leverage privileged features they already have access to without additional effort or skill. Adversary is only required to have access to an account with improper priveleges."},
+							{Skill: "Low: Adversary can leverage privileged features they already have access to without additional effort or skill. Adversary is only required to have access to an account with improper privileges."},
 						},
 						Abstraction: "Meta",
 						Consequences: []models.Consequence{

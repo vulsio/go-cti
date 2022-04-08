@@ -14,6 +14,7 @@ import (
 
 const cweURL = "https://cwe.mitre.org/data/xml/cwec_latest.xml.zip"
 
+// Fetch CWE data
 func Fetch() (map[string][]string, error) {
 	log15.Info("Fetching CWE...")
 
