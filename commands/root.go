@@ -29,14 +29,14 @@ func init() {
 
 	RootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.go-cti.yaml)")
 
+	RootCmd.PersistentFlags().Bool("log-to-file", false, "output log to file")
+	_ = viper.BindPFlag("log-to-file", RootCmd.PersistentFlags().Lookup("log-to-file"))
+
 	RootCmd.PersistentFlags().String("log-dir", utils.GetDefaultLogDir(), "/path/to/log")
 	_ = viper.BindPFlag("log-dir", RootCmd.PersistentFlags().Lookup("log-dir"))
 
 	RootCmd.PersistentFlags().Bool("log-json", false, "output log as JSON")
 	_ = viper.BindPFlag("log-json", RootCmd.PersistentFlags().Lookup("log-json"))
-
-	RootCmd.PersistentFlags().Bool("quiet", false, "quiet mode (no output)")
-	_ = viper.BindPFlag("quiet", RootCmd.PersistentFlags().Lookup("quiet"))
 
 	RootCmd.PersistentFlags().Bool("debug", false, "debug mode (default: false)")
 	_ = viper.BindPFlag("debug", RootCmd.PersistentFlags().Lookup("debug"))
@@ -44,8 +44,7 @@ func init() {
 	RootCmd.PersistentFlags().Bool("debug-sql", false, "SQL debug mode")
 	_ = viper.BindPFlag("debug-sql", RootCmd.PersistentFlags().Lookup("debug-sql"))
 
-	pwd := os.Getenv("PWD")
-	RootCmd.PersistentFlags().String("dbpath", filepath.Join(pwd, "go-cti.sqlite3"), "/path/to/sqlite3 or SQL connection string")
+	RootCmd.PersistentFlags().String("dbpath", filepath.Join(os.Getenv("PWD"), "go-cti.sqlite3"), "/path/to/sqlite3 or SQL connection string")
 	_ = viper.BindPFlag("dbpath", RootCmd.PersistentFlags().Lookup("dbpath"))
 
 	RootCmd.PersistentFlags().String("dbtype", "sqlite3", "Database type to store data in (sqlite3, mysql, postgres or redis supported)")
@@ -79,9 +78,4 @@ func initConfig() {
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	}
-	logDir := viper.GetString("log-dir")
-	quiet := viper.GetBool("quiet")
-	debug := viper.GetBool("debug")
-	logJSON := viper.GetBool("log-json")
-	utils.SetLogger(logDir, quiet, debug, logJSON)
 }
