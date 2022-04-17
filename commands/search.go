@@ -3,7 +3,6 @@ package commands
 import (
 	"encoding/json"
 	"fmt"
-	"regexp"
 
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -19,8 +18,18 @@ var searchCmd = &cobra.Command{
 	Use:   "search",
 	Short: "Search the data of mitre/cti form DB",
 	Long:  `Search the data of mitrc/cti form DB`,
-	Args:  cobra.ExactArgs(1),
-	RunE:  searchCti,
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) < 2 {
+			fmt.Println("[usage] $ go-cti search (cti|cve|attacker) $id1(, $id2...)")
+			return xerrors.New("Failed to search. err: argument is missing")
+		}
+		if !(args[0] == "cti" || args[0] == "cve" || args[0] == "attacker") {
+			fmt.Println("[usage] $ go-cti search (cti|cve|attacker) $id1(, $id2...)")
+			return xerrors.New(`Failed to search. err: search target is inappropriate, select "cti", "cve" or "attacker".`)
+		}
+		return nil
+	},
+	RunE: searchCti,
 }
 
 func init() {
@@ -53,25 +62,66 @@ func searchCti(_ *cobra.Command, args []string) error {
 		return xerrors.Errorf("Failed to search command. err: SchemaVersion is old. SchemaVersion: %+v", map[string]uint{"latest": models.LatestSchemaVersion, "DB": fetchMeta.SchemaVersion})
 	}
 
-	matched, err := regexp.MatchString(`^CVE-[0-9]{4}-[0-9]{4,}$`, args[0])
-	if err != nil {
-		return xerrors.Errorf("Failed to search CTI. err: %w", err)
-	}
-	if !matched {
-		return xerrors.Errorf("Failed to search CTI. err: invalid argument. expected format: CVE-xxxx-xxxx, actual: %s", args[0])
-	}
-
-	ctis, err := driver.GetCtiByCveID(args[0])
-	if err != nil {
-		return xerrors.Errorf("Failed to get CTI. err: %w", err)
-	}
-	if len(ctis) == 0 {
-		return nil
-	}
-
-	result, err := json.MarshalIndent(ctis, "", "  ")
-	if err != nil {
-		return xerrors.Errorf("Failed to marshal json. err: %w", err)
+	var result []byte
+	switch args[0] {
+	case "cti":
+		if len(args[1:]) == 1 {
+			cti, err := driver.GetCtiByCtiID(args[1])
+			if err != nil {
+				return xerrors.Errorf("Failed to search CTI. err: %w", err)
+			}
+			result, err = json.MarshalIndent(cti, "", "  ")
+			if err != nil {
+				return xerrors.Errorf("Failed to marshal json. err: %w", err)
+			}
+		} else {
+			ctis, err := driver.GetCtisByMultiCtiID(args[1:])
+			if err != nil {
+				return xerrors.Errorf("Failed to search CTIs. err: %w", err)
+			}
+			result, err = json.MarshalIndent(ctis, "", "  ")
+			if err != nil {
+				return xerrors.Errorf("Failed to marshal json. err: %w", err)
+			}
+		}
+	case "cve":
+		if len(args[1:]) == 1 {
+			techniques, err := driver.GetTechniqueIDsByCveID(args[1])
+			if err != nil {
+				return xerrors.Errorf("Failed to get CTI. err: %w", err)
+			}
+			if len(techniques) == 0 {
+				return nil
+			}
+			result, err = json.MarshalIndent(techniques, "", "  ")
+			if err != nil {
+				return xerrors.Errorf("Failed to marshal json. err: %w", err)
+			}
+		} else {
+			techniques, err := driver.GetTechniqueIDsByMultiCveID(args[1:])
+			if err != nil {
+				return xerrors.Errorf("Failed to get CTI. err: %w", err)
+			}
+			if len(techniques) == 0 {
+				return nil
+			}
+			result, err = json.MarshalIndent(techniques, "", "  ")
+			if err != nil {
+				return xerrors.Errorf("Failed to marshal json. err: %w", err)
+			}
+		}
+	case "attacker":
+		attackers, err := driver.GetAttackerIDsByTechniqueIDs(args[1:])
+		if err != nil {
+			return xerrors.Errorf("Failed to get attackers. err: %w", err)
+		}
+		if len(attackers) == 0 {
+			return nil
+		}
+		result, err = json.MarshalIndent(attackers, "", "  ")
+		if err != nil {
+			return xerrors.Errorf("Failed to marshal json. err: %w", err)
+		}
 	}
 	fmt.Printf("%s\n", string(result))
 	return nil

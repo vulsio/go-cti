@@ -49,13 +49,13 @@ type attackPattern struct {
 	typicalSeverity     string
 	description         string
 	extendedDescription string
-	alternateTerms      string
+	alternateTerms      []string
 	executionFlow       string
-	exampleInstances    string
-	domains             string
+	exampleInstances    []string
+	domains             []string
 	consequences        []string
-	prerequisites       string
-	resourcesRequired   string
+	prerequisites       []string
+	resourcesRequired   []string
 	skillRequired       []string
 	relatedWeaknesses   []string
 	references          []reference
