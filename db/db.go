@@ -1,10 +1,12 @@
 package db
 
 import (
+	"strings"
 	"time"
 
-	"github.com/vulsio/go-cti/models"
 	"golang.org/x/xerrors"
+
+	"github.com/vulsio/go-cti/models"
 )
 
 // DB :
@@ -18,9 +20,12 @@ type DB interface {
 	GetFetchMeta() (*models.FetchMeta, error)
 	UpsertFetchMeta(*models.FetchMeta) error
 
-	InsertCti([]models.Cti, []models.Mapping) error
-	GetCtiByCveID(string) ([]models.Cti, error)
-	GetCtiByMultiCveID([]string) (map[string][]models.Cti, error)
+	InsertCti([]models.Technique, []models.CveToTechniques, []models.Attacker) error
+	GetCtiByCtiID(string) (models.CTI, error)
+	GetCtisByMultiCtiID([]string) ([]models.CTI, error)
+	GetTechniqueIDsByCveID(string) ([]string, error)
+	GetTechniqueIDsByMultiCveID([]string) (map[string][]string, error)
+	GetAttackerIDsByTechniqueIDs([]string) ([]string, error)
 }
 
 // Option :
@@ -86,4 +91,19 @@ func chunkSlice(length int, chunkSize int) <-chan IndexChunk {
 	}()
 
 	return ch
+}
+
+func classCtiIDs(ctiIDs []string) ([]string, []string, error) {
+	techniques := []string{}
+	attackers := []string{}
+	for _, ctiID := range ctiIDs {
+		if strings.HasPrefix(ctiID, "T") || strings.HasPrefix(ctiID, "CAPEC") {
+			techniques = append(techniques, ctiID)
+		} else if strings.HasPrefix(ctiID, "G") || strings.HasPrefix(ctiID, "S") {
+			attackers = append(attackers, ctiID)
+		} else {
+			return nil, nil, xerrors.Errorf(`Failed to class CTI-IDs. err: invalid CTI-ID(%s). The prefix of the CTI-ID must be "T", "CAPEC", "G", or "S".`, ctiID)
+		}
+	}
+	return techniques, attackers, nil
 }

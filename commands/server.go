@@ -4,11 +4,12 @@ import (
 	"github.com/inconshreveable/log15"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/xerrors"
+
 	"github.com/vulsio/go-cti/db"
 	"github.com/vulsio/go-cti/models"
 	"github.com/vulsio/go-cti/server"
 	"github.com/vulsio/go-cti/utils"
-	"golang.org/x/xerrors"
 )
 
 // serverCmd represents the server command

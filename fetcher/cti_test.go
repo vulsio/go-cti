@@ -3,27 +3,28 @@ package fetcher
 import (
 	"testing"
 
-	"github.com/vulsio/go-cti/models"
 	"golang.org/x/exp/slices"
+
+	"github.com/vulsio/go-cti/models"
 )
 
-func TestBuildMappings(t *testing.T) {
+func TestBuildCveToTechniquess(t *testing.T) {
 	type args struct {
-		ctis        []models.Cti
+		techniques  []models.Technique
 		cweToCapecs map[string][]string
 		cveToCwes   map[string][]string
 	}
 
 	tests := []struct {
 		in       args
-		expected []models.Mapping
+		expected []models.CveToTechniques
 	}{
 		{
 			in: args{
-				ctis: []models.Cti{
+				techniques: []models.Technique{
 					{
-						CtiID: "CAPEC-1",
-						Type:  models.CAPECType,
+						TechniqueID: "CAPEC-1",
+						Type:        models.CAPECType,
 						Capec: &models.Capec{
 							AttackIDs: []models.AttackID{
 								{AttackID: "T1083"},
@@ -39,12 +40,12 @@ func TestBuildMappings(t *testing.T) {
 					"CVE-2020-0002":  {"CWE-787", "CWE-416"},
 				},
 			},
-			expected: []models.Mapping{
+			expected: []models.CveToTechniques{
 				{
 					CveID: "CVE-2020-10627",
-					CtiIDs: []models.CtiID{
-						{CtiID: "CAPEC-1"},
-						{CtiID: "T1083"},
+					TechniqueIDs: []models.CveToTechniqueID{
+						{TechniqueID: "CAPEC-1"},
+						{TechniqueID: "T1083"},
 					},
 				},
 			},
@@ -52,10 +53,10 @@ func TestBuildMappings(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		if actual := buildMappings(tt.in.ctis, tt.in.cweToCapecs, tt.in.cveToCwes); !slices.EqualFunc(actual, tt.expected, func(e1 models.Mapping, e2 models.Mapping) bool {
-			return e1.CveID == e2.CveID && slices.Equal(e1.CtiIDs, e2.CtiIDs)
+		if actual := buildCveToTechniques(tt.in.techniques, tt.in.cweToCapecs, tt.in.cveToCwes); !slices.EqualFunc(actual, tt.expected, func(e1 models.CveToTechniques, e2 models.CveToTechniques) bool {
+			return e1.CveID == e2.CveID && slices.Equal(e1.TechniqueIDs, e2.TechniqueIDs)
 		}) {
-			t.Errorf("[%d] buildMappings expected: %v, actual: %v\n", i, tt.expected, actual)
+			t.Errorf("[%d] buildCveToTechniques expected: %v, actual: %v\n", i, tt.expected, actual)
 		}
 	}
 }

@@ -51,7 +51,7 @@ type ctiObject struct {
 	XMitreRemoteSupport        bool     `json:"x_mitre_remote_support,omitempty"`
 	XMitreDeprecated           bool     `json:"x_mitre_deprecated,omitempty"`
 	// XMitreOldAttackID          string   `json:"x_mitre_old_attack_id,omitempty"`
-	// XMitreAliases              []string `json:"x_mitre_aliases,omitempty"`
+	XMitreAliases []string `json:"x_mitre_aliases,omitempty"`
 	// XMitreCollectionLayers []string `json:"x_mitre_collection_layers,omitempty"`
 	XMitreDataSourceRef string `json:"x_mitre_data_source_ref,omitempty"`
 }
@@ -60,13 +60,13 @@ type attackPattern struct {
 	name                 string
 	description          string
 	dataSources          string
-	permissionRequired   string
-	effectivePermissions string
-	platforms            string
-	impactType           string
+	permissionRequired   []string
+	effectivePermissions []string
+	platforms            []string
+	impactType           []string
 	networkRequirements  bool
 	remoteSupport        bool
-	defenseByPassed      string
+	defenseByPassed      []string
 	killChainPhases      []string
 	detection            string
 	references           []reference
@@ -76,6 +76,19 @@ type attackPattern struct {
 	deprecated           bool
 }
 
+type attacker struct {
+	objType     string
+	id          string
+	name        string
+	description string
+	platforms   []string
+	aliases     []string
+	references  []reference
+	created     time.Time
+	modified    time.Time
+	deprecated  bool
+}
+
 type reference struct {
 	SourceName  string `json:"source_name"`
 	ExternalID  string `json:"external_id,omitempty"`
@@ -83,14 +96,14 @@ type reference struct {
 	Description string `json:"description,omitempty"`
 }
 
-type additionalInfoObject struct {
+type otherInfo struct {
 	objType     string
 	name        string
 	description string
 	deprecated  bool
 }
 
-type relationshipObject struct {
+type relationship struct {
 	id               string
 	description      string
 	relationshipType string
@@ -102,4 +115,17 @@ type dataComponent struct {
 	name          string
 	description   string
 	dataSourceRef string
+}
+
+type techniqueUsed struct {
+	id         string
+	name       string
+	use        string
+	references []reference
+}
+
+type groupUsed struct {
+	name        string
+	description string
+	references  []reference
 }

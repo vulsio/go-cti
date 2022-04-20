@@ -37,8 +37,11 @@ func Start(logToFile bool, logDir string, driver db.DB) error {
 
 	// Routes
 	e.GET("/health", health())
-	e.GET("/cves/:cve", getVulnByCveID(driver))
-	e.POST("/multi-cves", getVulnByMultiCveID(driver))
+	e.GET("/ctis/:cti", getCtiByCtiID(driver))
+	e.POST("/multi-ctis", getCtiByMultiCtiID(driver))
+	e.GET("/cves/:cve", getTechniqueIDsByCveID(driver))
+	e.POST("/multi-cves", getTechniqueIDsByMultiCveID(driver))
+	e.POST("/attackers", getAttackerIDsByTechniqueIDs(driver))
 
 	bindURL := fmt.Sprintf("%s:%s", viper.GetString("bind"), viper.GetString("port"))
 	log15.Info("Listening...", "URL", bindURL)
@@ -52,35 +55,80 @@ func health() echo.HandlerFunc {
 	}
 }
 
-func getVulnByCveID(driver db.DB) echo.HandlerFunc {
-	return func(context echo.Context) (err error) {
-		cve := context.Param("cve")
-		log15.Debug("Params", "CVE", cve)
-
-		vuln, err := driver.GetCtiByCveID(cve)
-		if err != nil {
-			return xerrors.Errorf("Failed to get CTI by CVE. err: %w", err)
-		}
-		return context.JSON(http.StatusOK, vuln)
-	}
-}
-
 type param struct {
 	Args []string `json:"args"`
 }
 
-func getVulnByMultiCveID(driver db.DB) echo.HandlerFunc {
+func getCtiByCtiID(driver db.DB) echo.HandlerFunc {
+	return func(context echo.Context) (err error) {
+		ctiID := context.Param("cti")
+		log15.Debug("Params", "CTI-ID", ctiID)
+
+		cti, err := driver.GetCtiByCtiID(ctiID)
+		if err != nil {
+			return xerrors.Errorf("Failed to get CTI by CTI-ID. err: %w", err)
+		}
+		return context.JSON(http.StatusOK, cti)
+	}
+}
+
+func getCtiByMultiCtiID(driver db.DB) echo.HandlerFunc {
+	return func(context echo.Context) (err error) {
+		ctiIDs := param{}
+		if err := context.Bind(&ctiIDs); err != nil {
+			return err
+		}
+		log15.Debug("Params", "CTI-IDs", ctiIDs.Args)
+
+		ctis, err := driver.GetCtisByMultiCtiID(ctiIDs.Args)
+		if err != nil {
+			return xerrors.Errorf("Failed to get CTIs by CTI-IDs. err: %w", err)
+		}
+		return context.JSON(http.StatusOK, ctis)
+	}
+}
+
+func getTechniqueIDsByCveID(driver db.DB) echo.HandlerFunc {
+	return func(context echo.Context) (err error) {
+		cve := context.Param("cve")
+		log15.Debug("Params", "CVE-ID", cve)
+
+		ids, err := driver.GetTechniqueIDsByCveID(cve)
+		if err != nil {
+			return xerrors.Errorf("Failed to get TechniqueIDs by CVE-ID. err: %w", err)
+		}
+		return context.JSON(http.StatusOK, ids)
+	}
+}
+
+func getTechniqueIDsByMultiCveID(driver db.DB) echo.HandlerFunc {
 	return func(context echo.Context) (err error) {
 		cveIDs := param{}
 		if err := context.Bind(&cveIDs); err != nil {
 			return err
 		}
-		log15.Debug("Params", "CVEIDs", cveIDs.Args)
+		log15.Debug("Params", "CVE-IDs", cveIDs.Args)
 
-		vulns, err := driver.GetCtiByMultiCveID(cveIDs.Args)
+		vulns, err := driver.GetTechniqueIDsByMultiCveID(cveIDs.Args)
 		if err != nil {
-			return xerrors.Errorf("Failed to get CTI by CVE. err: %w", err)
+			return xerrors.Errorf("Failed to get TechniqueIDs by CVE-IDs. err: %w", err)
 		}
 		return context.JSON(http.StatusOK, vulns)
+	}
+}
+
+func getAttackerIDsByTechniqueIDs(driver db.DB) echo.HandlerFunc {
+	return func(context echo.Context) (err error) {
+		techIDs := param{}
+		if err := context.Bind(&techIDs); err != nil {
+			return err
+		}
+		log15.Debug("Params", "TechniqueIDs", techIDs.Args)
+
+		attackerIDs, err := driver.GetAttackerIDsByTechniqueIDs(techIDs.Args)
+		if err != nil {
+			return xerrors.Errorf("Failed to get AttackerIDs by TechniqueIDs. err: %w", err)
+		}
+		return context.JSON(http.StatusOK, attackerIDs)
 	}
 }

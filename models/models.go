@@ -25,76 +25,105 @@ func (f FetchMeta) OutDated() bool {
 // CTIType :
 type CTIType string
 
+// TechniqueSourceType :
+type TechniqueSourceType string
+
+// MitreAttackerType :
+type MitreAttackerType string
+
+// AttackSoftwareType :
+type AttackSoftwareType string
+
 var (
+	// TechniqueType :
+	TechniqueType CTIType = "Technique"
+	// AttackerType :
+	AttackerType CTIType = "Attacker"
+
 	// MitreAttackType :
-	MitreAttackType CTIType = "MITRE-ATTACK"
+	MitreAttackType TechniqueSourceType = "MITRE-ATTACK"
 	// CAPECType :
-	CAPECType CTIType = "CAPEC"
+	CAPECType TechniqueSourceType = "CAPEC"
+
+	// GroupType :
+	GroupType MitreAttackerType = "Group"
+	// Software :
+	SoftwareType MitreAttackerType = "Software"
+
+	// MalwareType :
+	MalwareType AttackSoftwareType = "Malware"
+	// ToolType :
+	ToolType AttackSoftwareType = "Tool"
 )
 
-// Mapping :
-type Mapping struct {
-	ID     int64   `json:"-"`
-	CveID  string  `gorm:"type:varchar(255);index:idx_mapping_cve_id" json:"cve_id"`
-	CtiIDs []CtiID `json:"cti_ids"`
+// CveToTechniques :
+type CveToTechniques struct {
+	ID           int64              `json:"-"`
+	CveID        string             `gorm:"type:varchar(255);index:idx_mapping_cve_id" json:"cve_id"`
+	TechniqueIDs []CveToTechniqueID `json:"technique_ids"`
 }
 
-// CtiID :
-type CtiID struct {
-	ID        int64  `json:"-"`
-	MappingID int64  `json:"-"`
-	CtiID     string `gorm:"type:varchar(255)" json:"cti_id"`
+// CveToTechniqueID :
+type CveToTechniqueID struct {
+	ID                int64  `json:"-"`
+	CveToTechniquesID int64  `json:"-"`
+	TechniqueID       string `gorm:"type:varchar(255)" json:"technique_id"`
 }
 
-// Cti : Cyber Threat Intelligence
-type Cti struct {
-	ID          int64        `json:"-"`
-	CtiID       string       `gorm:"type:varchar(255)" json:"cti_id"`
-	Type        CTIType      `gorm:"type:varchar(255)" json:"type"`
-	Name        string       `gorm:"type:varchar(255)" json:"name"`
-	Description string       `gorm:"type:text" json:"description"`
-	References  []Reference  `json:"references"`
-	Mitigations []Mitigation `json:"mitigations"`
-	MitreAttack *MitreAttack `json:"mitre_attack"`
-	Capec       *Capec       `json:"capec"`
-	Created     time.Time    `json:"created"`
-	Modified    time.Time    `json:"modified"`
+// Technique : Cyber Threat Intelligence
+type Technique struct {
+	ID          int64                `json:"-"`
+	TechniqueID string               `gorm:"type:varchar(255)" json:"technique_id"`
+	Type        TechniqueSourceType  `gorm:"type:varchar(255)" json:"type"`
+	Name        string               `gorm:"type:varchar(255)" json:"name"`
+	Description string               `gorm:"type:text" json:"description"`
+	References  []TechniqueReference `json:"references"`
+	Mitigations []Mitigation         `json:"mitigations"`
+	MitreAttack *MitreAttack         `json:"mitre_attack"`
+	Capec       *Capec               `json:"capec"`
+	Created     time.Time            `json:"created"`
+	Modified    time.Time            `json:"modified"`
 }
 
-// Reference is Child model of Cti
+// Reference is Child model of Technique
 type Reference struct {
-	ID          int64  `json:"-"`
-	CtiID       int64  `gorm:"index:idx_reference_cti_id" json:"-"`
 	SourceName  string `gorm:"type:varchar(255)" json:"source_name"`
 	Description string `gorm:"type:text" json:"description"`
 	URL         string `gorm:"type:text" json:"url"`
 }
 
-// Mitigation is Child model of Cti
+// TechniqueReference is Child model of Technique
+type TechniqueReference struct {
+	ID          int64 `json:"-"`
+	TechniqueID int64 `gorm:"index:idx_technique_reference_technique_id" json:"-"`
+	Reference   `gorm:"embedded"`
+}
+
+// Mitigation is Child model of Technique
 type Mitigation struct {
 	ID          int64  `json:"-"`
-	CtiID       int64  `gorm:"index:idx_mitigation_cti_id" json:"-"`
+	TechniqueID int64  `gorm:"index:idx_mitigation_technique_id" json:"-"`
 	Name        string `gorm:"type:text" json:"name"`
 	Description string `gorm:"type:text" json:"description"`
 }
 
-// MitreAttack is Child model of Cti
+// MitreAttack is Child model of Technique
 type MitreAttack struct {
-	ID                   int64          `json:"-"`
-	CtiID                int64          `gorm:"index:idx_mitre_attack_cti_id" json:"-"`
-	CapecIDs             []CapecID      `json:"capec_ids"`
-	Detection            string         `gorm:"type:text" json:"detection"`
-	KillChainPhases      string         `gorm:"type:varchar(255)" json:"kill_chain_phases"`
-	DataSources          []DataSource   `json:"data_sources"`
-	Procedures           []Procedure    `json:"procedures"`
-	Platforms            string         `gorm:"type:varchar(255)" json:"platforms"`
-	PermissionsRequired  string         `gorm:"type:varchar(255)" json:"permissions_required"`
-	EffectivePermissions string         `gorm:"type:varchar(255)" json:"effective_permissions"`
-	DefenseBypassed      string         `gorm:"type:varchar(255)" json:"defense_bypassed"`
-	ImpactType           string         `gorm:"type:varchar(255)" json:"impact_type"`
-	NetworkRequirements  bool           `json:"network_requirements"`
-	RemoteSupport        bool           `json:"remote_support"`
-	SubTechniques        []SubTechnique `json:"sub_techniques"`
+	ID                   int64                 `json:"-"`
+	TechniqueID          int64                 `gorm:"index:idx_mitre_attack_technique_id" json:"-"`
+	CapecIDs             []CapecID             `json:"capec_ids"`
+	Detection            string                `gorm:"type:text" json:"detection"`
+	KillChainPhases      []KillChainPhase      `json:"kill_chain_phases"`
+	DataSources          []DataSource          `json:"data_sources"`
+	Procedures           []Procedure           `json:"procedures"`
+	Platforms            []TechniquePlatform   `json:"platforms"`
+	PermissionsRequired  []PermissionRequired  `json:"permissions_required"`
+	EffectivePermissions []EffectivePermission `json:"effective_permissions"`
+	DefenseBypassed      []DefenseBypassed     `json:"defense_bypassed"`
+	ImpactType           []ImapctType          `json:"impact_type"`
+	NetworkRequirements  bool                  `json:"network_requirements"`
+	RemoteSupport        bool                  `json:"remote_support"`
+	SubTechniques        []SubTechnique        `json:"sub_techniques"`
 }
 
 // CapecID is Child model of MitreAttack
@@ -102,6 +131,13 @@ type CapecID struct {
 	ID            int64  `json:"-"`
 	MitreAttackID int64  `gorm:"index:idx_capec_id_mitre_attack_id" json:"-"`
 	CapecID       string `gorm:"type:varchar(255)" json:"capec_id"`
+}
+
+// KillChainPhase is Child model of MitreAttack
+type KillChainPhase struct {
+	ID            int64  `json:"-"`
+	MitreAttackID int64  `gorm:"index:idx_kill_chain_phase_mitre_attack_id" json:"-"`
+	Tactic        string `gorm:"type:varchar(255)" json:"tactic"`
 }
 
 // DataSource is Child model of MitreAttack
@@ -120,6 +156,41 @@ type Procedure struct {
 	Description   string `gorm:"type:text" json:"description"`
 }
 
+// TechniquePlatform is Child model of MitreAttack
+type TechniquePlatform struct {
+	ID            int64  `json:"-"`
+	MitreAttackID int64  `gorm:"index:idx_technique_platform_mitre_attack_id" json:"-"`
+	Platform      string `gorm:"type:varchar(255)" json:"platform"`
+}
+
+// PermissionRequired is Child model of MitreAttack
+type PermissionRequired struct {
+	ID            int64  `json:"-"`
+	MitreAttackID int64  `gorm:"index:idx_permission_required_mitre_attack_id" json:"-"`
+	Permission    string `gorm:"type:varchar(255)" json:"permission"`
+}
+
+// EffectivePermission is Child model of MitreAttack
+type EffectivePermission struct {
+	ID            int64  `json:"-"`
+	MitreAttackID int64  `gorm:"index:idx_effective_permission_mitre_attack_id" json:"-"`
+	Permission    string `gorm:"type:varchar(255)" json:"permission"`
+}
+
+// DefenseBypassed is Child model of MitreAttack
+type DefenseBypassed struct {
+	ID            int64  `json:"-"`
+	MitreAttackID int64  `gorm:"index:idx_defense_bypassed_mitre_attack_id" json:"-"`
+	Defense       string `gorm:"type:varchar(255)" json:"defense"`
+}
+
+// ImpactType is Child model of MitreAttack
+type ImapctType struct {
+	ID            int64  `json:"-"`
+	MitreAttackID int64  `gorm:"index:idx_impact_type_mitre_attack_id" json:"-"`
+	Type          string `gorm:"type:varchar(255)" json:"type"`
+}
+
 // SubTechnique is Child model of MitreAttack
 type SubTechnique struct {
 	ID            int64  `json:"-"`
@@ -127,26 +198,26 @@ type SubTechnique struct {
 	Name          string `gorm:"type:varchar(255)" json:"name"`
 }
 
-// Capec is Child model of Cti
+// Capec is Child model of Technique
 type Capec struct {
-	ID                  int64             `json:"-"`
-	CtiID               int64             `gorm:"index:idx_capec_cti_id" json:"-"`
-	AttackIDs           []AttackID        `json:"attack_ids"`
-	Status              string            `gorm:"type:varchar(255)" json:"status"`
-	ExtendedDescription string            `gorm:"type:text" json:"extended_description"`
-	TypicalSeverity     string            `gorm:"type:varchar(255)" json:"typical_severity"`
-	LikelihoodOfAttack  string            `gorm:"type:varchar(255)" json:"likelihood_of_attack"`
-	Relationships       []Relationship    `json:"relationship"`
-	Domains             string            `gorm:"type:varchar(255)" json:"domains"`
-	AlternateTerms      string            `gorm:"type:varchar(255)" json:"alternate_terms"`
-	ExampleInstances    string            `gorm:"type:text" json:"example_instances"`
-	Prerequisites       string            `gorm:"type:text" json:"prerequisites"`
-	ResourcesRequired   string            `gorm:"type:text" json:"resources_required"`
-	SkillsRequired      []SkillRequired   `json:"skills_required"`
-	Abstraction         string            `gorm:"type:varchar(255)" json:"abstraction"`
-	ExecutionFlow       string            `gorm:"type:text" json:"execution_flow"`
-	Consequences        []Consequence     `json:"consequences"`
-	RelatedWeaknesses   []RelatedWeakness `json:"related_weaknesses"`
+	ID                  int64              `json:"-"`
+	TechniqueID         int64              `gorm:"index:idx_capec_technique_id" json:"-"`
+	AttackIDs           []AttackID         `json:"attack_ids"`
+	Status              string             `gorm:"type:varchar(255)" json:"status"`
+	ExtendedDescription string             `gorm:"type:text" json:"extended_description"`
+	TypicalSeverity     string             `gorm:"type:varchar(255)" json:"typical_severity"`
+	LikelihoodOfAttack  string             `gorm:"type:varchar(255)" json:"likelihood_of_attack"`
+	Relationships       []Relationship     `json:"relationship"`
+	Domains             []Domain           `json:"domains"`
+	AlternateTerms      []AlternateTerm    `json:"alternate_terms"`
+	ExampleInstances    []ExampleInstance  `json:"example_instances"`
+	Prerequisites       []Prerequisite     `json:"prerequisites"`
+	ResourcesRequired   []ResourceRequired `json:"resources_required"`
+	SkillsRequired      []SkillRequired    `json:"skills_required"`
+	Abstraction         string             `gorm:"type:varchar(255)" json:"abstraction"`
+	ExecutionFlow       string             `gorm:"type:text" json:"execution_flow"`
+	Consequences        []Consequence      `json:"consequences"`
+	RelatedWeaknesses   []RelatedWeakness  `json:"related_weaknesses"`
 }
 
 // AttackID is Child model of Capec
@@ -162,6 +233,41 @@ type Relationship struct {
 	CapecID  int64  `gorm:"index:idx_relationship_capec_id" json:"-"`
 	Nature   string `gorm:"type:varchar(255)" json:"nature"`
 	Relation string `gorm:"type:varchar(255)" json:"relation"`
+}
+
+// Domain is Child model of Capec
+type Domain struct {
+	ID      int64  `json:"-"`
+	CapecID int64  `gorm:"index:idx_domain_capec_id" json:"-"`
+	Domain  string `gorm:"type:varchar(255)" json:"domain"`
+}
+
+// AlternateTerm is Child model of Capec
+type AlternateTerm struct {
+	ID      int64  `json:"-"`
+	CapecID int64  `gorm:"index:idx_alternate_term_capec_id" json:"-"`
+	Term    string `gorm:"type:varchar(255)" json:"term"`
+}
+
+// ExampleInstance is Child model of Capec
+type ExampleInstance struct {
+	ID       int64  `json:"-"`
+	CapecID  int64  `gorm:"index:idx_example_instance_capec_id" json:"-"`
+	Instance string `gorm:"type:text" json:"instance"`
+}
+
+// Prerequisite is Child model of Capec
+type Prerequisite struct {
+	ID           int64  `json:"-"`
+	CapecID      int64  `gorm:"index:idx_prerequisite_capec_id" json:"-"`
+	Prerequisite string `gorm:"type:text" json:"prerequisite"`
+}
+
+// ResourceRequired is Child model of Capec
+type ResourceRequired struct {
+	ID       int64  `json:"-"`
+	CapecID  int64  `gorm:"index:idx_resource_required_capec_id" json:"-"`
+	Resource string `gorm:"type:text" json:"prerequisite"`
 }
 
 // SkillRequired is Child model of Capec
@@ -183,4 +289,99 @@ type RelatedWeakness struct {
 	ID      int64  `json:"-"`
 	CapecID int64  `gorm:"index:idx_related_weakness_capec_id" json:"-"`
 	CweID   string `gorm:"type:varchar(255)" json:"cwe_id"`
+}
+
+// Attacker : MITRE ATT&CK Group and Software
+type Attacker struct {
+	ID             int64               `json:"-"`
+	AttackerID     string              `gorm:"type:varchar(255)" json:"attacker_id"`
+	Type           MitreAttackerType   `gorm:"type:varchar(255)" json:"type"`
+	Name           string              `gorm:"type:varchar(255)" json:"name"`
+	Description    string              `gorm:"type:text" json:"description"`
+	TechniquesUsed []TechniqueUsed     `json:"techniques_used"`
+	References     []AttackerReference `json:"references"`
+	Group          *AttackerGroup      `json:"group"`
+	Software       *AttackerSoftware   `json:"software"`
+	Created        time.Time           `json:"created"`
+	Modified       time.Time           `json:"modified"`
+}
+
+// TechniqueUsed is Child model of Attacker
+type TechniqueUsed struct {
+	ID          int64  `json:"-"`
+	AttackerID  int64  `gorm:"index:idx_technique_used_attacker_id" json:"-"`
+	TechniqueID string `gorm:"type:varchar(255)" json:"technique_id"`
+	Name        string `gorm:"type:varchar(255)" json:"name"`
+	Use         string `gorm:"type:varchar(255)" json:"use"`
+}
+
+// AttackerReference is Child model of Attacker
+type AttackerReference struct {
+	ID         int64 `json:"-"`
+	AttackerID int64 `gorm:"index:idx_attacker_reference_attacker_id" json:"-"`
+	Reference  `gorm:"embedded"`
+}
+
+// AttackerGroup is Child model of Attacker
+type AttackerGroup struct {
+	ID               int64             `json:"-"`
+	AttackerID       int64             `gorm:"index:idx_attacker_group_attacker_id" json:"-"`
+	AssociatedGroups []AssociatedGroup `json:"associated_group"`
+	SoftwaresUsed    []SoftwareUsed    `json:"softwares_used"`
+}
+
+// AssociatedGroup is Child models of Group
+type AssociatedGroup struct {
+	ID              int64  `json:"-"`
+	AttackerGroupID int64  `gorm:"index:idx_associated_group_attacker_group_id" json:"-"`
+	Name            string `gorm:"type:varchar(255)" json:"name"`
+	Description     string `gorm:"type:text" json:"description"`
+}
+
+// SoftwareUsed is Child models of Group
+type SoftwareUsed struct {
+	ID              int64  `json:"-"`
+	AttackerGroupID int64  `gorm:"index:idx_software_used_attacker_group_id" json:"-"`
+	Name            string `gorm:"type:varchar(255)" json:"name"`
+	Description     string `gorm:"type:text" json:"description"`
+}
+
+// AttackerSoftware is Child model of Attacker
+type AttackerSoftware struct {
+	ID                  int64                `json:"-"`
+	AttackerID          int64                `gorm:"index:idx_attacker_software_attacker_id" json:"-"`
+	Type                AttackSoftwareType   `gorm:"type:varchar(255)" json:"type"`
+	AssociatedSoftwares []AssociatedSoftware `json:"associated_softwares"`
+	Platforms           []SoftwarePlatform   `json:"platforms"`
+	GroupsUsed          []GroupUsed          `json:"groups_used"`
+}
+
+// AssociatedSoftware is Child models of Software
+type AssociatedSoftware struct {
+	ID                 int64  `json:"-"`
+	AttackerSoftwareID int64  `gorm:"index:idx_associated_software_attacker_software_id" json:"-"`
+	Name               string `gorm:"type:varchar(255)" json:"name"`
+	Description        string `gorm:"type:text" json:"description"`
+}
+
+// SoftwarePlatform is Child models of Software
+type SoftwarePlatform struct {
+	ID                 int64  `json:"-"`
+	AttackerSoftwareID int64  `gorm:"index:idx_software_platform_attacker_software_id" json:"-"`
+	Platform           string `gorm:"type:varchar(255)" json:"platform"`
+}
+
+// GroupUsed is Child models of Software
+type GroupUsed struct {
+	ID                 int64  `json:"-"`
+	AttackerSoftwareID int64  `gorm:"index:idx_group_used_attacker_software_id" json:"-"`
+	Name               string `gorm:"type:varchar(255)" json:"name"`
+	Description        string `gorm:"type:text" json:"description"`
+}
+
+// CTI for response
+type CTI struct {
+	Type      CTIType    `json:"type"`
+	Technique *Technique `json:"technique,omitempty"`
+	Attacker  *Attacker  `json:"attacker,omitempty"`
 }

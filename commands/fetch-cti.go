@@ -51,14 +51,14 @@ func fetchMitreCti(_ *cobra.Command, _ []string) (err error) {
 	}
 
 	log15.Info("Fetching Cyber Threat Intelligence and CVE-ID to CTI-ID Mappings")
-	ctis, mappings, err := fetcher.FetchCti()
+	techniques, mappings, attackers, err := fetcher.FetchCti()
 	if err != nil {
 		return xerrors.Errorf("Failed to fetch Cyber Threat Intelligence. err: %w", err)
 	}
-	log15.Info("Fetched Cyber Threat Intelligence and CVE-ID to CTI-ID Mappings", "ctis", len(ctis), "mappings", len(mappings))
+	log15.Info("Fetched Cyber Threat Intelligence and CVE-ID to CTI-ID Mappings", "techniques", len(techniques), "mappings", len(mappings), "attackers", len(attackers))
 
 	log15.Info("Insert Cyber Threat Intelligences and CVE-ID to CTI-ID Mappings into go-cti.", "db", driver.Name())
-	if err := driver.InsertCti(ctis, mappings); err != nil {
+	if err := driver.InsertCti(techniques, mappings, attackers); err != nil {
 		return xerrors.Errorf("Failed to insert. dbpath: %s, err: %w", viper.GetString("dbpath"), err)
 	}
 

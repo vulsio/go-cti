@@ -3,7 +3,6 @@ package capec
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/inconshreveable/log15"
 	"golang.org/x/exp/slices"
@@ -16,21 +15,21 @@ import (
 const capecURL = "https://raw.githubusercontent.com/mitre/cti/master/capec/2.1/stix-capec.json"
 
 // Fetch CAPEC data
-func Fetch() ([]models.Cti, error) {
+func Fetch() ([]models.Technique, error) {
 	log15.Info("Fetching CAPEC...")
 
 	res, err := utils.FetchURL(capecURL)
 	if err != nil {
 		return nil, xerrors.Errorf("Failed to fetch CAPEC JSON. err: %w", err)
 	}
-	ctis, err := parse(res)
+	techniques, err := parse(res)
 	if err != nil {
 		return nil, xerrors.Errorf("Failed to parse CAPEC Cyber Threat Intelligence. err: %w", err)
 	}
-	return ctis, nil
+	return techniques, nil
 }
 
-func parse(res []byte) ([]models.Cti, error) {
+func parse(res []byte) ([]models.Technique, error) {
 	var r root
 	if err := json.Unmarshal(res, &r); err != nil {
 		return nil, xerrors.Errorf("Failed to unmarshal json. err: %w", err)
@@ -63,14 +62,14 @@ func parse(res []byte) ([]models.Cti, error) {
 		}
 	}
 
-	ctis := []models.Cti{}
+	techniques := []models.Technique{}
 	for id, attackPattern := range attackPatterns {
-		cti := models.Cti{
-			CtiID:       attackPattern.id,
+		technique := models.Technique{
+			TechniqueID: attackPattern.id,
 			Type:        models.CAPECType,
 			Name:        attackPattern.name,
 			Description: attackPattern.description,
-			References:  []models.Reference{},
+			References:  []models.TechniqueReference{},
 			Mitigations: []models.Mitigation{},
 			Capec: &models.Capec{
 				AttackIDs:           []models.AttackID{},
@@ -79,11 +78,11 @@ func parse(res []byte) ([]models.Cti, error) {
 				TypicalSeverity:     attackPattern.typicalSeverity,
 				LikelihoodOfAttack:  attackPattern.likelihoodOfAttack,
 				Relationships:       []models.Relationship{},
-				Domains:             attackPattern.domains,
-				AlternateTerms:      attackPattern.alternateTerms,
-				ExampleInstances:    attackPattern.exampleInstances,
-				Prerequisites:       attackPattern.prerequisites,
-				ResourcesRequired:   attackPattern.resourcesRequired,
+				Domains:             []models.Domain{},
+				AlternateTerms:      []models.AlternateTerm{},
+				ExampleInstances:    []models.ExampleInstance{},
+				Prerequisites:       []models.Prerequisite{},
+				ResourcesRequired:   []models.ResourceRequired{},
 				SkillsRequired:      []models.SkillRequired{},
 				Abstraction:         attackPattern.abstraction,
 				ExecutionFlow:       attackPattern.executionFlow,
@@ -95,16 +94,50 @@ func parse(res []byte) ([]models.Cti, error) {
 		}
 
 		for _, attackID := range attackPattern.attackIDs {
-			cti.Capec.AttackIDs = append(cti.Capec.AttackIDs, models.AttackID{
+			technique.Capec.AttackIDs = append(technique.Capec.AttackIDs, models.AttackID{
 				AttackID: attackID,
 			})
 		}
 
 		for _, ref := range attackPattern.references {
-			cti.References = append(cti.References, models.Reference{
-				SourceName:  ref.SourceName,
-				Description: ref.Description,
-				URL:         ref.URL,
+			technique.References = append(technique.References, models.TechniqueReference{
+				Reference: models.Reference{
+					SourceName:  ref.SourceName,
+					Description: ref.Description,
+					URL:         ref.URL,
+				},
+			})
+		}
+
+		slices.Sort(attackPattern.domains)
+		for _, domain := range slices.Compact(attackPattern.domains) {
+			technique.Capec.Domains = append(technique.Capec.Domains, models.Domain{
+				Domain: domain,
+			})
+		}
+
+		for _, term := range attackPattern.alternateTerms {
+			technique.Capec.AlternateTerms = append(technique.Capec.AlternateTerms,
+				models.AlternateTerm{
+					Term: term,
+				})
+		}
+
+		for _, exampleInstance := range attackPattern.exampleInstances {
+			technique.Capec.ExampleInstances = append(technique.Capec.ExampleInstances, models.ExampleInstance{
+				Instance: exampleInstance,
+			})
+		}
+
+		for _, prerequisite := range attackPattern.prerequisites {
+			technique.Capec.Prerequisites = append(technique.Capec.Prerequisites, models.Prerequisite{
+				Prerequisite: prerequisite,
+			})
+		}
+
+		for _, resource := range attackPattern.resourcesRequired {
+			technique.Capec.ResourcesRequired = append(technique.Capec.ResourcesRequired, models.ResourceRequired{
+				Resource: resource,
 			})
 		}
 
@@ -127,23 +160,23 @@ func parse(res []byte) ([]models.Cti, error) {
 			if err != nil {
 				return nil, xerrors.Errorf("Failed to expand %s references. id: %s, err: %w", nature, id, err)
 			}
-			cti.Capec.Relationships = append(cti.Capec.Relationships, rels...)
+			technique.Capec.Relationships = append(technique.Capec.Relationships, rels...)
 		}
 
 		for _, skill := range attackPattern.skillRequired {
-			cti.Capec.SkillsRequired = append(cti.Capec.SkillsRequired, models.SkillRequired{
+			technique.Capec.SkillsRequired = append(technique.Capec.SkillsRequired, models.SkillRequired{
 				Skill: skill,
 			})
 		}
 
 		for _, consequence := range attackPattern.consequences {
-			cti.Capec.Consequences = append(cti.Capec.Consequences, models.Consequence{
+			technique.Capec.Consequences = append(technique.Capec.Consequences, models.Consequence{
 				Consequence: consequence,
 			})
 		}
 
 		for _, cweID := range attackPattern.relatedWeaknesses {
-			cti.Capec.RelatedWeaknesses = append(cti.Capec.RelatedWeaknesses, models.RelatedWeakness{
+			technique.Capec.RelatedWeaknesses = append(technique.Capec.RelatedWeaknesses, models.RelatedWeakness{
 				CweID: cweID,
 			})
 		}
@@ -153,17 +186,17 @@ func parse(res []byte) ([]models.Cti, error) {
 			if !ok {
 				return nil, xerrors.Errorf("Failed to get additionalInfo. id: %s, err: broken relationships", rel.id)
 			}
-			cti.Mitigations = append(cti.Mitigations, models.Mitigation{
+			technique.Mitigations = append(technique.Mitigations, models.Mitigation{
 				Name:        info.name,
 				Description: info.description,
 			})
 
 		}
 
-		ctis = append(ctis, cti)
+		techniques = append(techniques, technique)
 	}
 
-	return ctis, nil
+	return techniques, nil
 }
 
 func parseCAPECAttackPattern(obj ctiObject) attackPattern {
@@ -176,12 +209,12 @@ func parseCAPECAttackPattern(obj ctiObject) attackPattern {
 		typicalSeverity:     obj.XCapecTypicalSeverity,
 		description:         obj.Description,
 		extendedDescription: obj.XCapecExtendedDescription,
-		alternateTerms:      strings.Join(obj.XCapecAlternateTerms, ", "),
+		alternateTerms:      obj.XCapecAlternateTerms,
 		executionFlow:       obj.XCapecExecutionFlow,
-		exampleInstances:    strings.Join(obj.XCapecExampleInstances, ", "),
-		domains:             strings.Join(slices.Compact(obj.XCapecDomains), ", "),
-		prerequisites:       strings.Join(obj.XCapecPrerequisites, ", "),
-		resourcesRequired:   strings.Join(obj.XCapecResourcesRequired, ", "),
+		exampleInstances:    obj.XCapecExampleInstances,
+		domains:             obj.XCapecDomains,
+		prerequisites:       obj.XCapecPrerequisites,
+		resourcesRequired:   obj.XCapecResourcesRequired,
 		parentOfRefs:        obj.XCapecParentOfRefs,
 		childOfRefs:         obj.XCapecChildOfRefs,
 		canFollowRefs:       obj.XCapecCanFollowRefs,

@@ -7,24 +7,25 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+
 	"github.com/vulsio/go-cti/models"
 )
 
 func TestParse(t *testing.T) {
 	tests := []struct {
 		in       string
-		expected []models.Cti
+		expected []models.Technique
 		wantErr  bool
 	}{
 		{
 			in: "testdata/stix-capec.json",
-			expected: []models.Cti{
+			expected: []models.Technique{
 				{
-					CtiID:       "CAPEC-1",
+					TechniqueID: "CAPEC-1",
 					Type:        models.CAPECType,
 					Name:        "CAPEC-1: Accessing Functionality Not Properly Constrained by ACLs",
 					Description: "In applications, particularly web applications, access to functionality is mitigated by an authorization framework. This framework maps Access Control Lists (ACLs) to elements of the application's functionality; particularly URL's for web apps. In the case that the administrator failed to specify an ACL for a particular element, an attacker may be able to access it with impunity. An attacker with the ability to access functionality not properly constrained by ACLs can obtain sensitive information and possibly compromise the entire application. Such an attacker can access resources that must be available only to users at a higher privilege level, can access management sections of the application, or can run queries for data that they otherwise not supposed to.",
-					References:  []models.Reference{},
+					References:  []models.TechniqueReference{},
 					Mitigations: []models.Mitigation{
 						{
 							Name:        "\n               <xhtml:p>In a J2EE setting, administrators can associate a role that is impossible for the authenticator to grant users, such as \"NoAccess\", with all Servlets to which access is guarded by a limited number of servlets visible to, and accessible by, the user.</xhtml:p>\n               <xhtml:p>Having done so, any direct access to those protected Servlets will be prohibited by the web container.</xhtml:p>\n               <xhtml:p>In a more general setting, the administrator must mark every resource besides the ones supposed to be exposed to the user as accessible by a role impossible for the user to assume. The default security setting must be to deny access and then grant access only to those resources intended by business logic.</xhtml:p>\n            ",
@@ -63,11 +64,15 @@ func TestParse(t *testing.T) {
 								Relation: "Standard: CAPEC-test: mock for test",
 							},
 						},
-						Domains:           "Hardware, Software",
-						AlternateTerms:    "term1, term2",
-						ExampleInstances:  "\n               <xhtml:p>Implementing the Model-View-Controller (MVC) within Java EE's Servlet paradigm using a \"Single front controller\" pattern that demands that brokered HTTP requests be authenticated before hand-offs to other Action Servlets.</xhtml:p>\n               <xhtml:p>If no security-constraint is placed on those Action Servlets, such that positively no one can access them, the front controller can be subverted.</xhtml:p>\n            ",
-						Prerequisites:     "The application must be navigable in a manner that associates elements (subsections) of the application with ACLs., The various resources, or individual URLs, must be somehow discoverable by the attacker, The administrator must have forgotten to associate an ACL or has associated an inappropriately permissive ACL with a particular navigable resource.",
-						ResourcesRequired: "None: No specialized resources are required to execute this type of attack.",
+						Domains:          []models.Domain{{Domain: "Hardware"}, {Domain: "Software"}},
+						AlternateTerms:   []models.AlternateTerm{{Term: "term1"}, {Term: "term2"}},
+						ExampleInstances: []models.ExampleInstance{{Instance: "\n               <xhtml:p>Implementing the Model-View-Controller (MVC) within Java EE's Servlet paradigm using a \"Single front controller\" pattern that demands that brokered HTTP requests be authenticated before hand-offs to other Action Servlets.</xhtml:p>\n               <xhtml:p>If no security-constraint is placed on those Action Servlets, such that positively no one can access them, the front controller can be subverted.</xhtml:p>\n            "}},
+						Prerequisites: []models.Prerequisite{
+							{Prerequisite: "The application must be navigable in a manner that associates elements (subsections) of the application with ACLs."},
+							{Prerequisite: "The various resources, or individual URLs, must be somehow discoverable by the attacker"},
+							{Prerequisite: "The administrator must have forgotten to associate an ACL or has associated an inappropriately permissive ACL with a particular navigable resource."},
+						},
+						ResourcesRequired: []models.ResourceRequired{{Resource: "None: No specialized resources are required to execute this type of attack."}},
 						SkillsRequired: []models.SkillRequired{
 							{Skill: "Low: In order to discover unrestricted resources, the attacker does not need special tools or skills. They only have to observe the resources or access mechanisms invoked as each action is performed and then try and access those access mechanisms directly."},
 						},
@@ -100,11 +105,11 @@ func TestParse(t *testing.T) {
 					Modified: time.Date(2021, time.October, 21, 0, 0, 0, 0, time.UTC),
 				},
 				{
-					CtiID:       "CAPEC-122",
+					TechniqueID: "CAPEC-122",
 					Type:        models.CAPECType,
 					Name:        "CAPEC-122: Privilege Abuse",
 					Description: "An adversary is able to exploit features of the target that should be reserved for privileged users or administrators but are exposed to use by lower or non-privileged accounts. Access to sensitive information and functionality must be controlled to ensure that only authorized users are able to access these resources.",
-					References:  []models.Reference{},
+					References:  []models.TechniqueReference{},
 					Mitigations: []models.Mitigation{},
 					MitreAttack: nil,
 					Capec: &models.Capec{
@@ -114,10 +119,14 @@ func TestParse(t *testing.T) {
 						TypicalSeverity:     "Medium",
 						LikelihoodOfAttack:  "High",
 						Relationships:       []models.Relationship{},
-						Domains:             "Hardware, Software",
-						ExampleInstances:    "\n               <xhtml:p>Improperly configured account privileges allowed unauthorized users on a hospital's network to access the medical records for over 3,000 patients. Thus compromising data integrity and confidentiality in addition to HIPAA violations.</xhtml:p>\n            ",
-						Prerequisites:       "The target must have misconfigured their access control mechanisms such that sensitive information, which should only be accessible to more trusted users, remains accessible to less trusted users., The adversary must have access to the target, albeit with an account that is less privileged than would be appropriate for the targeted resources.",
-						ResourcesRequired:   "None: No specialized resources are required to execute this type of attack. The ability to access the target is required.",
+						Domains:             []models.Domain{{Domain: "Hardware"}, {Domain: "Software"}},
+						AlternateTerms:      []models.AlternateTerm{},
+						ExampleInstances:    []models.ExampleInstance{{Instance: "\n               <xhtml:p>Improperly configured account privileges allowed unauthorized users on a hospital's network to access the medical records for over 3,000 patients. Thus compromising data integrity and confidentiality in addition to HIPAA violations.</xhtml:p>\n            "}},
+						Prerequisites: []models.Prerequisite{
+							{Prerequisite: "The target must have misconfigured their access control mechanisms such that sensitive information, which should only be accessible to more trusted users, remains accessible to less trusted users."},
+							{Prerequisite: "The adversary must have access to the target, albeit with an account that is less privileged than would be appropriate for the targeted resources."},
+						},
+						ResourcesRequired: []models.ResourceRequired{{Resource: "None: No specialized resources are required to execute this type of attack. The ability to access the target is required."}},
 						SkillsRequired: []models.SkillRequired{
 							{Skill: "Low: Adversary can leverage privileged features they already have access to without additional effort or skill. Adversary is only required to have access to an account with improper privileges."},
 						},
@@ -140,14 +149,16 @@ func TestParse(t *testing.T) {
 					Modified: time.Date(2022, time.February, 22, 0, 0, 0, 0, time.UTC),
 				},
 				{
-					CtiID:       "CAPEC-17",
+					TechniqueID: "CAPEC-17",
 					Type:        models.CAPECType,
 					Name:        "CAPEC-17: Using Malicious Files",
 					Description: "An attack of this type exploits a system's configuration that allows an adversary to either directly access an executable file, for example through shell access; or in a possible worst case allows an adversary to upload a file and then execute it. Web servers, ftp servers, and message oriented middleware systems which have many integration points are particularly vulnerable, because both the programmers and the administrators must be in synch regarding the interfaces and the correct privileges for each interface.",
-					References: []models.Reference{
+					References: []models.TechniqueReference{
 						{
-							SourceName:  "reference_from_CAPEC",
-							Description: "G. Hoglund, G. McGraw, Exploiting Software: How to Break Code, 2004--02, Addison-Wesley",
+							Reference: models.Reference{
+								SourceName:  "reference_from_CAPEC",
+								Description: "G. Hoglund, G. McGraw, Exploiting Software: How to Break Code, 2004--02, Addison-Wesley",
+							},
 						},
 					},
 					Mitigations: []models.Mitigation{},
@@ -160,10 +171,11 @@ func TestParse(t *testing.T) {
 						TypicalSeverity:    "Very High",
 						LikelihoodOfAttack: "High",
 						Relationships:      []models.Relationship{},
-						Domains:            "Hardware, Software",
-						ExampleInstances:   "\n               <xhtml:p>Consider a directory on a web server with the following permissions</xhtml:p>\n               <xhtml:div style=\"margin-left:10px;\" class=\"informative\">drwxrwxrwx 5 admin public 170 Nov 17 01:08 webroot</xhtml:div>\n               <xhtml:p>This could allow an attacker to both execute and upload and execute programs' on the web server. This one vulnerability can be exploited by a threat to probe the system and identify additional vulnerabilities to exploit.</xhtml:p>\n            ",
-						Prerequisites:      "System's configuration must allow an attacker to directly access executable files or upload files to execute. This means that any access control system that is supposed to mediate communications between the subject and the object is set incorrectly or assumes a benign environment.",
-						ResourcesRequired:  "Ability to communicate synchronously or asynchronously with server that publishes an over-privileged directory, program, or interface. Optionally, ability to capture output directly through synchronous communication or other method such as FTP.",
+						Domains:            []models.Domain{{Domain: "Hardware"}, {Domain: "Software"}},
+						AlternateTerms:     []models.AlternateTerm{},
+						ExampleInstances:   []models.ExampleInstance{{Instance: "\n               <xhtml:p>Consider a directory on a web server with the following permissions</xhtml:p>\n               <xhtml:div style=\"margin-left:10px;\" class=\"informative\">drwxrwxrwx 5 admin public 170 Nov 17 01:08 webroot</xhtml:div>\n               <xhtml:p>This could allow an attacker to both execute and upload and execute programs' on the web server. This one vulnerability can be exploited by a threat to probe the system and identify additional vulnerabilities to exploit.</xhtml:p>\n            "}},
+						Prerequisites:      []models.Prerequisite{{Prerequisite: "System's configuration must allow an attacker to directly access executable files or upload files to execute. This means that any access control system that is supposed to mediate communications between the subject and the object is set incorrectly or assumes a benign environment."}},
+						ResourcesRequired:  []models.ResourceRequired{{Resource: "Ability to communicate synchronously or asynchronously with server that publishes an over-privileged directory, program, or interface. Optionally, ability to capture output directly through synchronous communication or other method such as FTP."}},
 						SkillsRequired: []models.SkillRequired{
 							{Skill: "Low: To identify and execute against an over-privileged system interface"},
 						},
@@ -193,15 +205,17 @@ func TestParse(t *testing.T) {
 					Modified: time.Date(2022, time.February, 22, 0, 0, 0, 0, time.UTC),
 				},
 				{
-					CtiID:       "CAPEC-58",
+					TechniqueID: "CAPEC-58",
 					Type:        models.CAPECType,
 					Name:        "CAPEC-58: Restful Privilege Elevation",
 					Description: "Rest uses standard HTTP (Get, Put, Delete) style permissions methods, but these are not necessarily correlated generally with back end programs. Strict interpretation of HTTP get methods means that these HTTP Get services should not be used to delete information on the server, but there is no access control mechanism to back up this logic. This means that unless the services are properly ACL'd and the application's service implementation are following these guidelines then an HTTP request can easily execute a delete or update on the server side. The attacker identifies a HTTP Get URL such as http://victimsite/updateOrder, which calls out to a program to update orders on a database or other resource. The URL is not idempotent so the request can be submitted multiple times by the attacker, additionally, the attacker may be able to exploit the URL published as a Get method that actually performs updates (instead of merely retrieving data). This may result in malicious or inadvertent altering of data on the server.",
-					References: []models.Reference{
+					References: []models.TechniqueReference{
 						{
-							SourceName:  "reference_from_CAPEC",
-							Description: "Mark O'Neill, Security for REST Web Services, Vprde;",
-							URL:         "http://www.vordel.com/downloads/rsa_conf_2006.pdf",
+							Reference: models.Reference{
+								SourceName:  "reference_from_CAPEC",
+								Description: "Mark O'Neill, Security for REST Web Services, Vprde;",
+								URL:         "http://www.vordel.com/downloads/rsa_conf_2006.pdf",
+							},
 						},
 					},
 					Mitigations: []models.Mitigation{},
@@ -212,9 +226,11 @@ func TestParse(t *testing.T) {
 						TypicalSeverity:    "High",
 						LikelihoodOfAttack: "High",
 						Relationships:      []models.Relationship{},
-						Domains:            "Hardware, Software",
-						ExampleInstances:   "The HTTP Get method is designed to retrieve resources and not to alter the state of the application or resources on the server side. However, developers can easily code programs that accept a HTTP Get request that do in fact create, update or delete data on the server. Both Flickr (http://www.flickr.com/services/api/flickr.photosets.delete.html) and del.icio.us (http://del.icio.us/api/posts/delete) have implemented delete operations using standard HTTP Get requests. These HTTP Get methods do delete data on the server side, despite being called from Get which is not supposed to alter state.",
-						Prerequisites:      "The attacker needs to be able to identify HTTP Get URLs. The Get methods must be set to call applications that perform operations other than get such as update and delete.",
+						Domains:            []models.Domain{{Domain: "Hardware"}, {Domain: "Software"}},
+						AlternateTerms:     []models.AlternateTerm{},
+						ExampleInstances:   []models.ExampleInstance{{Instance: "The HTTP Get method is designed to retrieve resources and not to alter the state of the application or resources on the server side. However, developers can easily code programs that accept a HTTP Get request that do in fact create, update or delete data on the server. Both Flickr (http://www.flickr.com/services/api/flickr.photosets.delete.html) and del.icio.us (http://del.icio.us/api/posts/delete) have implemented delete operations using standard HTTP Get requests. These HTTP Get methods do delete data on the server side, despite being called from Get which is not supposed to alter state."}},
+						Prerequisites:      []models.Prerequisite{{Prerequisite: "The attacker needs to be able to identify HTTP Get URLs. The Get methods must be set to call applications that perform operations other than get such as update and delete."}},
+						ResourcesRequired:  []models.ResourceRequired{},
 						SkillsRequired: []models.SkillRequired{
 							{Skill: "Low: It is relatively straightforward to identify an HTTP Get method that changes state on the server side and executes against an over-privileged system interface"},
 						},
@@ -234,11 +250,11 @@ func TestParse(t *testing.T) {
 					Modified: time.Date(2021, time.June, 24, 0, 0, 0, 0, time.UTC),
 				},
 				{
-					CtiID:       "CAPEC-test",
+					TechniqueID: "CAPEC-test",
 					Type:        models.CAPECType,
 					Name:        "CAPEC-test: mock for test",
 					Description: "",
-					References:  []models.Reference{},
+					References:  []models.TechniqueReference{},
 					Mitigations: []models.Mitigation{},
 					MitreAttack: nil,
 					Capec: &models.Capec{
@@ -248,10 +264,11 @@ func TestParse(t *testing.T) {
 						TypicalSeverity:     "",
 						LikelihoodOfAttack:  "",
 						Relationships:       []models.Relationship{},
-						Domains:             "",
-						ExampleInstances:    "",
-						Prerequisites:       "",
-						ResourcesRequired:   "",
+						Domains:             []models.Domain{},
+						AlternateTerms:      []models.AlternateTerm{},
+						ExampleInstances:    []models.ExampleInstance{},
+						Prerequisites:       []models.Prerequisite{},
+						ResourcesRequired:   []models.ResourceRequired{},
 						SkillsRequired:      []models.SkillRequired{},
 						Abstraction:         "Standard",
 						Consequences:        []models.Consequence{},
@@ -261,18 +278,6 @@ func TestParse(t *testing.T) {
 					Modified: time.Date(2019, time.September, 30, 0, 0, 0, 0, time.UTC),
 				},
 			},
-		},
-		{
-			in:       "testdata/deprecated.json",
-			expected: []models.Cti{},
-		},
-		{
-			in:      "testdata/fail_expand.json",
-			wantErr: true,
-		},
-		{
-			in:      "testdata/fail_get_addinfo.json",
-			wantErr: true,
 		},
 	}
 
@@ -290,8 +295,8 @@ func TestParse(t *testing.T) {
 		}
 
 		opts := []cmp.Option{
-			cmpopts.SortSlices(func(i, j models.Cti) bool {
-				return i.CtiID < j.CtiID
+			cmpopts.SortSlices(func(i, j models.Technique) bool {
+				return i.TechniqueID < j.TechniqueID
 			}),
 			cmpopts.SortSlices(func(i, j models.Consequence) bool {
 				return i.Consequence < j.Consequence

@@ -174,7 +174,7 @@
       "x_mitre_version": "1.1",
       "modified": "2020-03-30T02:46:16.483Z",
       "created_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
-      "aliases": ["Sowbug"],
+      "aliases": ["Sowbug", "test"],
       "id": "intrusion-set--d1acfbb3-647b-4723-9154-800ec119006e",
       "description": "[Sowbug](https://attack.mitre.org/groups/G0054) is a threat group that has conducted targeted attacks against organizations in South America and Southeast Asia, particularly government entities, since at least 2015. (Citation: Symantec Sowbug Nov 2017)",
       "x_mitre_contributors": ["Alan Neville, @abnev"],
@@ -190,6 +190,10 @@
           "source_name": "Sowbug"
         },
         {
+          "description": "test",
+          "source_name": "test"
+        },
+        {
           "source_name": "Symantec Sowbug Nov 2017",
           "description": "Symantec Security Response. (2017, November 7). Sowbug: Cyber espionage group targets South American and Southeast Asian governments. Retrieved November 16, 2017.",
           "url": "https://www.symantec.com/connect/blogs/sowbug-cyber-espionage-group-targets-south-american-and-southeast-asian-governments"
@@ -202,7 +206,7 @@
       ],
       "type": "malware",
       "name": "HOMEFRY",
-      "x_mitre_aliases": ["HOMEFRY"],
+      "x_mitre_aliases": ["HOMEFRY", "test"],
       "x_mitre_version": "1.1",
       "modified": "2020-03-30T16:47:38.393Z",
       "created": "2018-04-18T17:59:24.739Z",
@@ -220,6 +224,10 @@
         {
           "description": "(Citation: FireEye Periscope March 2018)",
           "source_name": "HOMEFRY"
+        },
+        {
+          "description": "test",
+          "source_name": "test"
         },
         {
           "source_name": "FireEye Periscope March 2018",
@@ -399,6 +407,27 @@
           "source_name": "GitHub Pupy",
           "description": "Nicolas Verdier. (n.d.). Retrieved January 29, 2018.",
           "url": "https://github.com/n1nj4sec/pupy"
+        }
+      ]
+    },
+    {
+      "object_marking_refs": [
+        "marking-definition--fa42a846-8d90-4e51-bc29-71d5b4802168"
+      ],
+      "type": "relationship",
+      "id": "relationship--f24d37c0-283d-4f37-8278-07fc75cc0e94",
+      "description": "(Citation: Symantec Buckeye)",
+      "target_ref": "malware--7451bcf9-e6e6-4a70-bc3d-1599173d0035",
+      "modified": "2019-04-29T18:01:20.637Z",
+      "source_ref": "intrusion-set--d1acfbb3-647b-4723-9154-800ec119006e",
+      "created_by_ref": "identity--c78cb6e5-0c4b-4611-8297-d1b8b55e40b5",
+      "relationship_type": "uses",
+      "created": "2018-01-16T16:13:52.465Z",
+      "external_references": [
+        {
+          "source_name": "Symantec Buckeye",
+          "description": "Symantec Security Response. (2016, September 6). Buckeye cyberespionage group shifts gaze from US to Hong Kong. Retrieved September 26, 2016.",
+          "url": "http://www.symantec.com/connect/blogs/buckeye-cyberespionage-group-shifts-gaze-us-hong-kong"
         }
       ]
     },

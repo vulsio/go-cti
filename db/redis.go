@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/cheggaaa/pb/v3"
@@ -32,12 +33,14 @@ import (
   └───┴────────────────┴────────┴──────────────────────────────────────────────────┘
 
 - Sets
-  ┌───┬────────────────┬─────────────┬─────────────────────────┐
-  │NO │      KEY       │    MEMBER   │       PURPOSE           │
-  └───┴────────────────┴─────────────┴─────────────────────────┘
-  ┌───┬────────────────┬─────────────┬─────────────────────────┐
-  │ 1 │ CTI#CVE#$CVEID │ $CTIID │ TO GET CTIID FROM CVEID │
-  └───┴────────────────┴─────────────┴─────────────────────────┘
+  ┌───┬─────────────────────┬──────────────┬─────────────────────────────────────┐
+  │NO │        KEY          │    MEMBER    │             PURPOSE                 │
+  └───┴─────────────────────┴──────────────┴─────────────────────────────────────┘
+  ┌───┬─────────────────────┬──────────────┬─────────────────────────────────────┐
+  │ 1 │ CTI#CVE#$CVEID      │ $TECHNIQUEID │ TO GET TECHNIQUEIDs FROM CVEID      │
+  ├───┼─────────────────────┼──────────────┼─────────────────────────────────────┤
+  │ 2 │ CTI#ATK#$ATTACKERID │ $TECHNIQUEID │ TO GET TECHNIQUEIDs FROM ATTACKERID │
+  └───┴─────────────────────┴──────────────┴─────────────────────────────────────┘
 
   - Hash
   ┌───┬────────────────┬───────────────┬──────────────┬──────────────────────────────┐
@@ -56,6 +59,7 @@ const (
 	dialectRedis   = "redis"
 	ctiIDKeyFormat = "CTI#CTI#%s"
 	cveIDKeyFormat = "CTI#CVE#%s"
+	atkIDKeyFormat = "CTI#ATK#%s"
 	depKey         = "CTI#DEP"
 	fetchMetaKey   = "CTI#FETCHMETA"
 )
@@ -175,14 +179,14 @@ func (r *RedisDriver) UpsertFetchMeta(fetchMeta *models.FetchMeta) error {
 }
 
 // InsertCti :
-func (r *RedisDriver) InsertCti(ctis []models.Cti, mappings []models.Mapping) error {
+func (r *RedisDriver) InsertCti(techniques []models.Technique, mappings []models.CveToTechniques, attackers []models.Attacker) error {
 	ctx := context.Background()
 	batchSize := viper.GetInt("batch-size")
 	if batchSize < 1 {
 		return xerrors.New("Failed to set batch-size. err: batch-size option is not set properly")
 	}
 
-	// newDeps, oldDeps: {"cti": {"CTI-ID": {}}, "mapping": {"CVE-ID": {"CTI-ID": {}}}}
+	// newDeps, oldDeps: {"cti": {"CTI-ID": {}}, "mapping": {"CVE-ID or AttackID": {"TechniqueID": {}}}}
 	newDeps := map[string]map[string]map[string]struct{}{"cti": {}, "mapping": {}}
 	oldDepsStr, err := r.conn.Get(ctx, depKey).Result()
 	if err != nil {
@@ -197,22 +201,20 @@ func (r *RedisDriver) InsertCti(ctis []models.Cti, mappings []models.Mapping) er
 	}
 
 	log15.Info("Inserting Cyber Threat Intelligences...")
-	bar := pb.StartNew(len(ctis))
-	for idx := range chunkSlice(len(ctis), batchSize) {
+
+	log15.Info("Inserting Techniques...")
+	bar := pb.StartNew(len(techniques))
+	for idx := range chunkSlice(len(techniques), batchSize) {
 		pipe := r.conn.Pipeline()
-		for _, cti := range ctis[idx.From:idx.To] {
-			j, err := json.Marshal(cti)
+		for _, technique := range techniques[idx.From:idx.To] {
+			j, err := json.Marshal(technique)
 			if err != nil {
 				return xerrors.Errorf("Failed to marshal json. err: %w", err)
 			}
 
-			_ = pipe.Set(ctx, fmt.Sprintf(ctiIDKeyFormat, cti.CtiID), j, 0)
-			if _, ok := newDeps["cti"][cti.CtiID]; !ok {
-				newDeps["cti"][cti.CtiID] = map[string]struct{}{}
-			}
-			if _, ok := oldDeps["cti"][cti.CtiID]; ok {
-				delete(oldDeps["cti"], cti.CtiID)
-			}
+			_ = pipe.Set(ctx, fmt.Sprintf(ctiIDKeyFormat, technique.TechniqueID), j, 0)
+			newDeps["cti"][technique.TechniqueID] = map[string]struct{}{}
+			delete(oldDeps["cti"], technique.TechniqueID)
 		}
 		if _, err := pipe.Exec(ctx); err != nil {
 			return xerrors.Errorf("Failed to exec pipeline. err: %w", err)
@@ -221,20 +223,22 @@ func (r *RedisDriver) InsertCti(ctis []models.Cti, mappings []models.Mapping) er
 	}
 	bar.Finish()
 
-	log15.Info("Inserting CVE-ID to CTI-ID Mappings...")
+	log15.Info("Inserting CVE-ID to CTI-ID CveToTechniques...")
 	bar = pb.StartNew(len(mappings))
 	for idx := range chunkSlice(len(mappings), batchSize) {
 		pipe := r.conn.Pipeline()
 		for _, mapping := range mappings[idx.From:idx.To] {
-			for _, ctiID := range mapping.CtiIDs {
-				_ = pipe.SAdd(ctx, fmt.Sprintf(cveIDKeyFormat, mapping.CveID), ctiID.CtiID)
+			cveKey := fmt.Sprintf(cveIDKeyFormat, mapping.CveID)
+			if _, ok := newDeps["mapping"][mapping.CveID]; !ok {
+				newDeps["mapping"][mapping.CveID] = map[string]struct{}{}
+			}
 
-				if _, ok := newDeps["mapping"][mapping.CveID]; !ok {
-					newDeps["mapping"][mapping.CveID] = map[string]struct{}{}
-				}
-				newDeps["mapping"][mapping.CveID][ctiID.CtiID] = struct{}{}
+			for _, ctiID := range mapping.TechniqueIDs {
+				_ = pipe.SAdd(ctx, cveKey, ctiID.TechniqueID)
+
+				newDeps["mapping"][mapping.CveID][ctiID.TechniqueID] = struct{}{}
 				if _, ok := oldDeps["mapping"][mapping.CveID]; ok {
-					delete(oldDeps["mapping"][mapping.CveID], ctiID.CtiID)
+					delete(oldDeps["mapping"][mapping.CveID], ctiID.TechniqueID)
 					if len(oldDeps["mapping"][mapping.CveID]) == 0 {
 						delete(oldDeps["mapping"], mapping.CveID)
 					}
@@ -248,12 +252,53 @@ func (r *RedisDriver) InsertCti(ctis []models.Cti, mappings []models.Mapping) er
 	}
 	bar.Finish()
 
+	log15.Info("Inserting Attackers...")
+	bar = pb.StartNew(len(attackers))
+	for idx := range chunkSlice(len(attackers), batchSize) {
+		pipe := r.conn.Pipeline()
+		for _, attacker := range attackers[idx.From:idx.To] {
+			j, err := json.Marshal(attacker)
+			if err != nil {
+				return xerrors.Errorf("Failed to marshal json. err: %w", err)
+			}
+
+			_ = pipe.Set(ctx, fmt.Sprintf(ctiIDKeyFormat, attacker.AttackerID), j, 0)
+			newDeps["cti"][attacker.AttackerID] = map[string]struct{}{}
+			delete(oldDeps["cti"], attacker.AttackerID)
+
+			atkKey := fmt.Sprintf(atkIDKeyFormat, attacker.AttackerID)
+			if _, ok := newDeps["mapping"][attacker.AttackerID]; !ok {
+				newDeps["mapping"][attacker.AttackerID] = map[string]struct{}{}
+			}
+
+			for _, technique := range attacker.TechniquesUsed {
+				_ = pipe.SAdd(ctx, atkKey, technique.TechniqueID)
+
+				newDeps["mapping"][attacker.AttackerID][technique.TechniqueID] = struct{}{}
+				if _, ok := oldDeps["mapping"][attacker.AttackerID]; ok {
+					delete(oldDeps["mapping"][attacker.AttackerID], technique.TechniqueID)
+					if len(oldDeps["mapping"][attacker.AttackerID]) == 0 {
+						delete(oldDeps["mapping"], attacker.AttackerID)
+					}
+				}
+			}
+		}
+		if _, err := pipe.Exec(ctx); err != nil {
+			return xerrors.Errorf("Failed to exec pipeline. err: %w", err)
+		}
+		bar.Add(idx.To - idx.From)
+	}
+
 	pipe := r.conn.Pipeline()
 	for ctiID := range oldDeps["cti"] {
 		_ = pipe.Del(ctx, fmt.Sprintf(ctiIDKeyFormat, ctiID))
 	}
-	for cveID, ctiIDs := range oldDeps["mapping"] {
-		_ = pipe.SRem(ctx, fmt.Sprintf(cveIDKeyFormat, cveID), maps.Keys(ctiIDs))
+	for id, techniqueIDs := range oldDeps["mapping"] {
+		if strings.HasPrefix(id, "CVE") {
+			_ = pipe.SRem(ctx, fmt.Sprintf(cveIDKeyFormat, id), maps.Keys(techniqueIDs))
+		} else {
+			_ = pipe.SRem(ctx, fmt.Sprintf(atkIDKeyFormat, id), maps.Keys(techniqueIDs))
+		}
 	}
 	newDepsJSON, err := json.Marshal(newDeps)
 	if err != nil {
@@ -267,45 +312,116 @@ func (r *RedisDriver) InsertCti(ctis []models.Cti, mappings []models.Mapping) er
 	return nil
 }
 
-// GetCtiByCveID :
-func (r *RedisDriver) GetCtiByCveID(cveID string) ([]models.Cti, error) {
+// GetCtiByCtiID :
+func (r *RedisDriver) GetCtiByCtiID(ctiID string) (models.CTI, error) {
 	ctx := context.Background()
 
-	ctiIDs, err := r.conn.SMembers(ctx, fmt.Sprintf(cveIDKeyFormat, cveID)).Result()
+	techniqueIDs, attackerIDs, err := classCtiIDs([]string{ctiID})
 	if err != nil {
-		return nil, xerrors.Errorf("Failed to SMembers. key: %s, err: %w", fmt.Sprintf(cveIDKeyFormat, cveID), err)
+		return models.CTI{}, xerrors.Errorf("Failed to classCtiIDs. err: %w", err)
 	}
+
+	cti := models.CTI{}
+	if len(techniqueIDs) > 0 {
+		cti.Type = models.TechniqueType
+
+		str, err := r.conn.Get(ctx, fmt.Sprintf(ctiIDKeyFormat, techniqueIDs[0])).Result()
+		if err != nil {
+			return models.CTI{}, xerrors.Errorf("Failed to Get. key: %s, err: %s", fmt.Sprintf(ctiIDKeyFormat, techniqueIDs[0]), err)
+		}
+		if err := json.Unmarshal([]byte(str), &cti.Technique); err != nil {
+			return models.CTI{}, xerrors.Errorf("Failed to Unmarshal JSON. err: %w", err)
+		}
+	} else {
+		cti.Type = models.AttackerType
+
+		str, err := r.conn.Get(ctx, fmt.Sprintf(ctiIDKeyFormat, attackerIDs[0])).Result()
+		if err != nil {
+			return models.CTI{}, xerrors.Errorf("Failed to Get. key: %s, err: %s", fmt.Sprintf(ctiIDKeyFormat, attackerIDs[0]), err)
+		}
+		if err := json.Unmarshal([]byte(str), &cti.Attacker); err != nil {
+			return models.CTI{}, xerrors.Errorf("Failed to Unmarshal JSON. err: %w", err)
+		}
+	}
+
+	return cti, nil
+}
+
+// GetCtisByMultiCtiID :
+func (r *RedisDriver) GetCtisByMultiCtiID(ctiIDs []string) ([]models.CTI, error) {
+	ctx := context.Background()
+
+	techniqueIDs, attackerIDs, err := classCtiIDs(ctiIDs)
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to classCtiIDs. err: %w", err)
+	}
+
+	ctis := []models.CTI{}
 
 	pipe := r.conn.Pipeline()
-	for _, ctiID := range ctiIDs {
-		_ = pipe.Get(ctx, fmt.Sprintf(ctiIDKeyFormat, ctiID))
+	for _, techniqueID := range techniqueIDs {
+		_ = pipe.Get(ctx, fmt.Sprintf(ctiIDKeyFormat, techniqueID))
 	}
 	cmders, err := pipe.Exec(ctx)
-	if err != nil {
-		if errors.Is(err, redis.Nil) {
-			return nil, xerrors.Errorf("Failed to exec pipeline. DB relationship may be broken, use `$ go-cti fetch threat` to recreate DB. ctiIDs: %q, err: %w", ctiIDs, err)
-		}
-		return nil, xerrors.Errorf("Failed to exec pipeline. ctiIDs: %q, err: %w", ctiIDs, err)
+	if err != nil && !errors.Is(err, redis.Nil) {
+		return nil, xerrors.Errorf("Failed to exec pipeline. techniqueIDs: %q, err: %w", techniqueIDs, err)
 	}
 
-	ctis := []models.Cti{}
-	for i, cmder := range cmders {
+	for _, cmder := range cmders {
 		res, err := cmder.(*redis.StringCmd).Result()
 		if err != nil {
-			return nil, xerrors.Errorf("Failed to Get. CVE key: %s, CTI key: %s, err: %w", fmt.Sprintf(cveIDKeyFormat, cveID), fmt.Sprintf(ctiIDKeyFormat, ctiIDs[i]), err)
+			return nil, xerrors.Errorf("Failed to Get. err: %w", err)
 		}
 
-		var cti models.Cti
-		if err := json.Unmarshal([]byte(res), &cti); err != nil {
+		var technique models.Technique
+		if err := json.Unmarshal([]byte(res), &technique); err != nil {
 			return nil, xerrors.Errorf("Failed to unmarshal json. err: %w", err)
 		}
-		ctis = append(ctis, cti)
+		ctis = append(ctis, models.CTI{
+			Type:      models.TechniqueType,
+			Technique: &technique,
+		})
 	}
+
+	pipe = r.conn.Pipeline()
+	for _, attackerID := range attackerIDs {
+		_ = pipe.Get(ctx, fmt.Sprintf(ctiIDKeyFormat, attackerID))
+	}
+	cmders, err = pipe.Exec(ctx)
+	if err != nil && !errors.Is(err, redis.Nil) {
+		return nil, xerrors.Errorf("Failed to exec pipeline. attackerIDs: %q, err: %w", attackerIDs, err)
+	}
+
+	for _, cmder := range cmders {
+		res, err := cmder.(*redis.StringCmd).Result()
+		if err != nil {
+			return nil, xerrors.Errorf("Failed to Get. err: %w", err)
+		}
+
+		var attacker models.Attacker
+		if err := json.Unmarshal([]byte(res), &attacker); err != nil {
+			return nil, xerrors.Errorf("Failed to unmarshal json. err: %w", err)
+		}
+		ctis = append(ctis, models.CTI{
+			Type:     models.AttackerType,
+			Attacker: &attacker,
+		})
+	}
+
 	return ctis, nil
 }
 
-// GetCtiByMultiCveID :
-func (r *RedisDriver) GetCtiByMultiCveID(cveIDs []string) (map[string][]models.Cti, error) {
+// GetTechniqueIDsByCveID :
+func (r *RedisDriver) GetTechniqueIDsByCveID(cveID string) ([]string, error) {
+	techniqueIDs, err := r.conn.SMembers(context.Background(), fmt.Sprintf(cveIDKeyFormat, cveID)).Result()
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to SMembers. key: %s, err: %w", fmt.Sprintf(cveIDKeyFormat, cveID), err)
+	}
+	return techniqueIDs, nil
+}
+
+// GetTechniqueIDsByMultiCveID :
+func (r *RedisDriver) GetTechniqueIDsByMultiCveID(cveIDs []string) (map[string][]string, error) {
 	ctx := context.Background()
 
 	m := map[string]*redis.StringSliceCmd{}
@@ -317,39 +433,75 @@ func (r *RedisDriver) GetCtiByMultiCveID(cveIDs []string) (map[string][]models.C
 		return nil, xerrors.Errorf("Failed to exec pipeline. err: %w", err)
 	}
 
-	ctis := map[string][]models.Cti{}
+	techniqueIDs := map[string][]string{}
 	for cveID, cmd := range m {
-		ctiIDs, err := cmd.Result()
+		ids, err := cmd.Result()
 		if err != nil {
 			return nil, xerrors.Errorf("Failed to SMembers. key: %s, err: %w", fmt.Sprintf(cveIDKeyFormat, cveID), err)
 		}
-
-		pipe := r.conn.Pipeline()
-		for _, ctiID := range ctiIDs {
-			_ = pipe.Get(ctx, fmt.Sprintf(ctiIDKeyFormat, ctiID))
-		}
-		cmders, err := pipe.Exec(ctx)
-		if err != nil {
-			if errors.Is(err, redis.Nil) {
-				return nil, xerrors.Errorf("Failed to exec pipeline. DB relationship may be broken, use `$ go-cti fetch threat` to recreate DB. ctiIDs: %q, err: %w", ctiIDs, err)
-			}
-			return nil, xerrors.Errorf("Failed to exec pipeline. ctiIDs: %q, err: %w", ctiIDs, err)
-		}
-
-		var cs []models.Cti
-		for i, cmder := range cmders {
-			res, err := cmder.(*redis.StringCmd).Result()
-			if err != nil {
-				return nil, xerrors.Errorf("Failed to Get. CVE key: %s, CTI key: %s, err: %w", fmt.Sprintf(cveIDKeyFormat, cveID), fmt.Sprintf(ctiIDKeyFormat, ctiIDs[i]), err)
-			}
-
-			var cti models.Cti
-			if err := json.Unmarshal([]byte(res), &cti); err != nil {
-				return nil, xerrors.Errorf("Failed to unmarshal json. err: %w", err)
-			}
-			cs = append(cs, cti)
-		}
-		ctis[cveID] = cs
+		techniqueIDs[cveID] = ids
 	}
-	return ctis, nil
+	return techniqueIDs, nil
+}
+
+// GetAttackerIDsByTechniqueIDs :
+func (r *RedisDriver) GetAttackerIDsByTechniqueIDs(techniqueIDs []string) ([]string, error) {
+	ctx := context.Background()
+
+	atkKeys := []string{}
+
+	dbsize, err := r.conn.DBSize(ctx).Result()
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to DBSize. err: %w", err)
+	}
+
+	var cursor uint64
+	for {
+		var keys []string
+		var err error
+		keys, cursor, err = r.conn.Scan(ctx, cursor, fmt.Sprintf(atkIDKeyFormat, "*"), dbsize/5).Result()
+		if err != nil {
+			return nil, xerrors.Errorf("Failed to Scan. err: %w", err)
+		}
+
+		atkKeys = append(atkKeys, keys...)
+
+		if cursor == 0 {
+			break
+		}
+	}
+
+	m := map[string]*redis.StringSliceCmd{}
+	pipe := r.conn.Pipeline()
+	for _, atkKey := range atkKeys {
+		m[strings.TrimPrefix(atkKey, "CTI#ATK#")] = pipe.SMembers(ctx, atkKey)
+	}
+	if _, err := pipe.Exec(ctx); err != nil {
+		return nil, xerrors.Errorf("Failed to exec pipeline. err: %w", err)
+	}
+
+	attackerIDs := []string{}
+	for atkID, cmd := range m {
+		ids, err := cmd.Result()
+		if err != nil {
+			return nil, xerrors.Errorf("Failed to SMembers. key: %s, err: %w", fmt.Sprintf(atkIDKeyFormat, atkID), err)
+		}
+
+		attackerUsedTechniques := map[string]struct{}{}
+		for _, id := range ids {
+			attackerUsedTechniques[id] = struct{}{}
+		}
+
+		for _, techniqueID := range techniqueIDs {
+			delete(attackerUsedTechniques, techniqueID)
+			if len(attackerUsedTechniques) == 0 {
+				break
+			}
+		}
+		if len(attackerUsedTechniques) == 0 {
+			attackerIDs = append(attackerIDs, atkID)
+		}
+	}
+
+	return attackerIDs, nil
 }
