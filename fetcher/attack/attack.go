@@ -263,7 +263,7 @@ func fillTechnique(attackPattern attackPattern, relationships []relationship, at
 			PermissionsRequired:  []models.PermissionRequired{},
 			EffectivePermissions: []models.EffectivePermission{},
 			DefenseBypassed:      []models.DefenseBypassed{},
-			ImpactType:           []models.ImapctType{},
+			ImpactType:           []models.ImpactType{},
 			NetworkRequirements:  attackPattern.networkRequirements,
 			RemoteSupport:        attackPattern.remoteSupport,
 			SubTechniques:        []models.SubTechnique{},
@@ -388,7 +388,7 @@ func fillTechnique(attackPattern attackPattern, relationships []relationship, at
 	}
 
 	for _, impactType := range attackPattern.impactType {
-		technique.MitreAttack.ImpactType = append(technique.MitreAttack.ImpactType, models.ImapctType{
+		technique.MitreAttack.ImpactType = append(technique.MitreAttack.ImpactType, models.ImpactType{
 			Type: impactType,
 		})
 	}
