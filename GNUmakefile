@@ -4,13 +4,23 @@
 	all \
 	vendor \
 	lint \
+	golangci \
 	vet \
 	fmt \
 	fmtcheck \
 	pretest \
 	test \
 	cov \
-	clean
+	clean \
+	build-integration \
+	clean-integration \
+	fetch-rdb \
+	fetch-redis \
+	diff-cveid \
+	diff-package \
+	diff-server-rdb \
+	diff-server-redis \
+	diff-server-rdb-redis
 
 SRCS = $(shell git ls-files '*.go')
 PKGS = $(shell go list ./...)
@@ -32,6 +42,10 @@ install: main.go
 lint:
 	$(GO) install github.com/mgechev/revive@latest
 	revive -config ./.revive.toml -formatter plain $(PKGS)
+
+golangci:
+	$(GO) install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	golangci-lint run
 
 vet:
 	echo $(PKGS) | xargs env $(GO) vet || exit;
