@@ -14,6 +14,7 @@
 
 SRCS = $(shell git ls-files '*.go')
 PKGS = $(shell go list ./...)
+VERSION := $(shell git describe --tags --abbrev=0)
 REVISION := $(shell git rev-parse --short HEAD)
 BUILDTIME := $(shell date "+%Y%m%d_%H%M%S")
 LDFLAGS := -X 'github.com/vulsio/go-cti/config.Version=$(VERSION)' \
