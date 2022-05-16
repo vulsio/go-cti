@@ -127,7 +127,7 @@ func (r *RDBDriver) MigrateDB() error {
 		&models.PermissionRequired{},
 		&models.EffectivePermission{},
 		&models.DefenseBypassed{},
-		&models.ImapctType{},
+		&models.ImpactType{},
 		&models.SubTechnique{},
 
 		&models.Capec{},
@@ -226,7 +226,7 @@ func (r *RDBDriver) deleteAndInsertCti(conn *gorm.DB, techniques []models.Techni
 		models.SoftwareUsed{}, models.AssociatedGroup{}, models.AttackerGroup{},
 		models.AttackerReference{}, models.TechniqueUsed{}, models.Attacker{},
 		models.RelatedWeakness{}, models.Consequence{}, models.SkillRequired{}, models.ResourceRequired{}, models.Prerequisite{}, models.ExampleInstance{}, models.AlternateTerm{}, models.Domain{}, models.Relationship{}, models.AttackID{}, models.Capec{},
-		models.SubTechnique{}, models.ImapctType{}, models.DefenseBypassed{}, models.EffectivePermission{}, models.PermissionRequired{}, models.TechniquePlatform{}, models.Procedure{}, models.DataSource{}, models.KillChainPhase{}, models.CapecID{}, models.MitreAttack{},
+		models.SubTechnique{}, models.ImpactType{}, models.DefenseBypassed{}, models.EffectivePermission{}, models.PermissionRequired{}, models.TechniquePlatform{}, models.Procedure{}, models.DataSource{}, models.KillChainPhase{}, models.CapecID{}, models.MitreAttack{},
 		models.Mitigation{}, models.TechniqueReference{}, models.Technique{},
 		models.CveToTechniqueID{}, models.CveToTechniques{},
 	} {

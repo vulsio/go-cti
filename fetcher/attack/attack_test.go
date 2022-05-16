@@ -167,7 +167,7 @@ func TestParse(t *testing.T) {
 						DefenseBypassed: []models.DefenseBypassed{
 							{Defense: "System Access Controls"},
 						},
-						ImpactType: []models.ImapctType{
+						ImpactType: []models.ImpactType{
 							{Type: "test"},
 						},
 						NetworkRequirements: true,
@@ -220,7 +220,7 @@ func TestParse(t *testing.T) {
 						},
 						EffectivePermissions: []models.EffectivePermission{},
 						DefenseBypassed:      []models.DefenseBypassed{},
-						ImpactType:           []models.ImapctType{},
+						ImpactType:           []models.ImpactType{},
 						SubTechniques:        []models.SubTechnique{},
 					},
 					Capec:    nil,

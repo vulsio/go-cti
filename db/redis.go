@@ -269,6 +269,9 @@ func (r *RedisDriver) InsertCti(techniques []models.Technique, mappings []models
 			atkKey := fmt.Sprintf(atkIDKeyFormat, attacker.AttackerID)
 			if _, ok := newDeps["mapping"][attacker.AttackerID]; !ok {
 				newDeps["mapping"][attacker.AttackerID] = map[string]struct{}{}
+				if len(oldDeps["mapping"][attacker.AttackerID]) == 0 {
+					delete(oldDeps["mapping"], attacker.AttackerID)
+				}
 			}
 
 			for _, technique := range attacker.TechniquesUsed {

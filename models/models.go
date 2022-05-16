@@ -47,7 +47,7 @@ var (
 
 	// GroupType :
 	GroupType MitreAttackerType = "Group"
-	// Software :
+	// SoftwareType :
 	SoftwareType MitreAttackerType = "Software"
 
 	// MalwareType :
@@ -120,7 +120,7 @@ type MitreAttack struct {
 	PermissionsRequired  []PermissionRequired  `json:"permissions_required"`
 	EffectivePermissions []EffectivePermission `json:"effective_permissions"`
 	DefenseBypassed      []DefenseBypassed     `json:"defense_bypassed"`
-	ImpactType           []ImapctType          `json:"impact_type"`
+	ImpactType           []ImpactType          `json:"impact_type"`
 	NetworkRequirements  bool                  `json:"network_requirements"`
 	RemoteSupport        bool                  `json:"remote_support"`
 	SubTechniques        []SubTechnique        `json:"sub_techniques"`
@@ -185,7 +185,7 @@ type DefenseBypassed struct {
 }
 
 // ImpactType is Child model of MitreAttack
-type ImapctType struct {
+type ImpactType struct {
 	ID            int64  `json:"-"`
 	MitreAttackID int64  `gorm:"index:idx_impact_type_mitre_attack_id" json:"-"`
 	Type          string `gorm:"type:varchar(255)" json:"type"`
