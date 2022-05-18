@@ -188,38 +188,38 @@ import (
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
-  ctiDB "github.com/vulsio/go-cti/db"
+	ctiDB "github.com/vulsio/go-cti/db"
 	"github.com/vulsio/go-cti/models"
 )
 
 func main() {
 	db, err := gorm.Open(sqlite.Open("go-cti.sqlite3"))
 	if err != nil {
-		fmt.Printf("failed to open DB. err: %s\n", err)
+		fmt.Fprintf(os.Stderr, "failed to open DB. err: %s\n", err)
 		os.Exit(1)
 	}
 	techniqueIDs := []string{}
 	if err := db.Model(&models.Technique{}).Select("technique_id").Find(&techniqueIDs).Error; err != nil {
-		fmt.Printf("failed to get techniqueIDs. err: %s\n", err)
+		fmt.Fprintf(os.Stderr, "failed to get techniqueIDs. err: %s\n", err)
 		os.Exit(1)
 	}
 	sqlDB, err := db.DB()
 	if err != nil {
-		fmt.Printf("failed to get sqlDB. err: %s\n", err)
+		fmt.Fprintf(os.Stderr, "failed to get sqlDB. err: %s\n", err)
 		os.Exit(1)
 	}
 	if err := sqlDB.Close(); err != nil {
-		fmt.Printf("failed to close sqlDB. err: %s\n", err)
+		fmt.Fprintf(os.Stderr, "failed to close sqlDB. err: %s\n", err)
 		os.Exit(1)
 	}
 
 	driver, locked, err := ctiDB.NewDB("sqlite3", "go-cti.sqlite3", false, ctiDB.Option{})
 	if locked || err != nil {
-		fmt.Printf("failed to new DB. locked: %t, err: %s\n", locked, err)
+		fmt.Fprintf(os.Stderr, "failed to new DB. locked: %t, err: %s\n", locked, err)
 		os.Exit(1)
 	}
 
-  fmt.Println("// Technique has MITER ATT&CK Technique or CAPEC information")
+	fmt.Println("// Technique has MITER ATT&CK Technique or CAPEC information")
 	fmt.Printf("type Technique struct {\n  Name string `json:\"name\"`\n  Platforms []string `json:\"platforms\"`\n}\n\n")
 	fmt.Println("// TechniqueDict is the MITRE ATT&CK Technique and CAPEC dictionary")
 	fmt.Printf("var TechniqueDict = map[string]Technique{\n")
@@ -227,7 +227,7 @@ func main() {
 	for _, techniqueID := range techniqueIDs {
 		cti, err := driver.GetCtiByCtiID(techniqueID)
 		if err != nil {
-			fmt.Printf("failed to get CTI. err: %s\n", err)
+			fmt.Fprintf(os.Stderr, "failed to get CTI. err: %s\n", err)
 			os.Exit(1)
 		}
 
@@ -259,7 +259,7 @@ func main() {
 	fmt.Println("}")
 
 	if err := driver.CloseDB(); err != nil {
-		fmt.Printf("failed to close DB. err: %s", err)
+		fmt.Fprintf(os.Stderr, "failed to close DB. err: %s", err)
 		os.Exit(1)
 	}
 }
