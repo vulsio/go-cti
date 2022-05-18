@@ -3,7 +3,8 @@ package fetcher
 import (
 	"testing"
 
-	"golang.org/x/exp/slices"
+	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 
 	"github.com/vulsio/go-cti/models"
 )
@@ -53,10 +54,13 @@ func TestBuildCveToTechniquess(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		if actual := buildCveToTechniques(tt.in.techniques, tt.in.cweToCapecs, tt.in.cveToCwes); !slices.EqualFunc(actual, tt.expected, func(e1 models.CveToTechniques, e2 models.CveToTechniques) bool {
-			return e1.CveID == e2.CveID && slices.Equal(e1.TechniqueIDs, e2.TechniqueIDs)
-		}) {
-			t.Errorf("[%d] buildCveToTechniques expected: %v, actual: %v\n", i, tt.expected, actual)
+		opts := []cmp.Option{
+			cmpopts.SortSlices(func(i, j models.CveToTechniqueID) bool {
+				return i.TechniqueID < j.TechniqueID
+			}),
+		}
+		if diff := cmp.Diff(buildCveToTechniques(tt.in.techniques, tt.in.cweToCapecs, tt.in.cveToCwes), tt.expected, opts...); diff != "" {
+			t.Errorf("[%d] buildCveToTechniques diff: (-got +want)\n%s", i, diff)
 		}
 	}
 }
