@@ -8,7 +8,7 @@ require (
 	github.com/google/go-cmp v0.5.7
 	github.com/inconshreveable/log15 v0.0.0-20201112154412-8562bdadbbac
 	github.com/labstack/echo v3.3.10+incompatible
-	github.com/mattn/go-sqlite3 v1.14.12
+	github.com/mattn/go-sqlite3 v1.14.15
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/parnurzeal/gorequest v0.2.16
 	github.com/spf13/cobra v1.4.0
@@ -17,8 +17,8 @@ require (
 	golang.org/x/xerrors v0.0.0-20220411194840-2f41105eb62f
 	gorm.io/driver/mysql v1.3.3
 	gorm.io/driver/postgres v1.3.4
-	gorm.io/driver/sqlite v1.3.1
-	gorm.io/gorm v1.23.4
+	gorm.io/driver/sqlite v1.4.2
+	gorm.io/gorm v1.24.0
 )
 
 require (
