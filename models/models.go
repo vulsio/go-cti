@@ -49,6 +49,8 @@ var (
 	GroupType MitreAttackerType = "Group"
 	// SoftwareType :
 	SoftwareType MitreAttackerType = "Software"
+	// CampaignType :
+	CampaignType MitreAttackerType = "Campaign"
 
 	// MalwareType :
 	MalwareType AttackSoftwareType = "Malware"
@@ -302,8 +304,9 @@ type Attacker struct {
 	References     []AttackerReference `json:"references"`
 	Group          *AttackerGroup      `json:"group"`
 	Software       *AttackerSoftware   `json:"software"`
-	Created        time.Time           `json:"created"`
-	Modified       time.Time           `json:"modified"`
+	// Campaign       *AttackerCampaign   `json:"campaign"`
+	Created  time.Time `json:"created"`
+	Modified time.Time `json:"modified"`
 }
 
 // TechniqueUsed is Child model of Attacker
@@ -378,6 +381,27 @@ type GroupUsed struct {
 	Name               string `gorm:"type:varchar(255)" json:"name"`
 	Description        string `gorm:"type:text" json:"description"`
 }
+
+// type AttackerCampaign struct {
+// 	ID         int64                      `json:"-"`
+// 	AttackerID int64                      `gorm:"index:idx_attacker_campaign_attacker_id" json:"-"`
+// 	Softwares  []AttackerCampaignSoftware `json:"softwares"`
+// 	Groups     []AttackerCampaignGroup    `json:"groups"`
+// }
+
+// type AttackerCampaignSoftware struct {
+// 	ID                 int64  `json:"-"`
+// 	AttackerCampaignID int64  `gorm:"index:idx_attacker_campaign_software_attacker_campaign_id" json:"-"`
+// 	Name               string `gorm:"type:varchar(255)" json:"name"`
+// 	Description        string `gorm:"type:text" json:"description"`
+// }
+
+// type AttackerCampaignGroup struct {
+// 	ID                 int64  `json:"-"`
+// 	AttackerCampaignID int64  `gorm:"index:idx_attacker_campaign_group_attacker_campaign_id" json:"-"`
+// 	Name               string `gorm:"type:varchar(255)" json:"name"`
+// 	Description        string `gorm:"type:text" json:"description"`
+// }
 
 // CTI for response
 type CTI struct {

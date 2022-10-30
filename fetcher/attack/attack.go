@@ -55,7 +55,7 @@ func parse(res []byte) ([]models.Technique, []models.Attacker, error) {
 	techniquesUsed := map[string][]techniqueUsed{}
 	for _, rels := range relationships {
 		for _, rel := range rels {
-			if !(strings.HasPrefix(rel.targetRef, "attack-pattern--") && (strings.HasPrefix(rel.sourceRef, "intrusion-set--") || strings.HasPrefix(rel.sourceRef, "malware--") || strings.HasPrefix(rel.sourceRef, "tool--"))) {
+			if !(strings.HasPrefix(rel.targetRef, "attack-pattern--") && (strings.HasPrefix(rel.sourceRef, "intrusion-set--") || strings.HasPrefix(rel.sourceRef, "malware--") || strings.HasPrefix(rel.sourceRef, "tool--") || strings.HasPrefix(rel.sourceRef, "campaign--"))) {
 				continue
 			}
 			technique, ok := attackPatterns[rel.targetRef]
@@ -122,7 +122,7 @@ func parseEachObject(root []ctiObject) (map[string]attackPattern, map[string]att
 				description: obj.Description,
 				deprecated:  obj.Revoked || obj.XMitreDeprecated,
 			}
-		case "intrusion-set", "malware", "tool":
+		case "intrusion-set", "malware", "tool", "campaign":
 			attackers[obj.ID] = parseAttacker(obj)
 		case "x-mitre-tactic":
 			others[obj.XMitreShortname] = otherInfo{
@@ -223,14 +223,10 @@ func parseAttacker(obj ctiObject) attacker {
 	}
 
 	switch obj.Type {
-	case "intrusion-set":
-		for _, alias := range obj.Aliases {
-			r.aliases = append(r.aliases, alias)
-		}
+	case "intrusion-set", "campaign":
+		r.aliases = append(r.aliases, obj.Aliases...)
 	case "malware", "tool":
-		for _, alias := range obj.XMitreAliases {
-			r.aliases = append(r.aliases, alias)
-		}
+		r.aliases = append(r.aliases, obj.XMitreAliases...)
 	}
 
 	return r
@@ -328,7 +324,7 @@ func fillTechnique(attackPattern attackPattern, relationships []relationship, at
 				Name:        info.name,
 				Description: info.description,
 			})
-		case "intrusion-set", "malware", "tool":
+		case "intrusion-set", "malware", "tool", "campaign":
 			info, ok := attackers[rel.sourceRef]
 			if !ok {
 				return models.Technique{}, xerrors.Errorf("Failed to get attacker. relationship id: %s, err: broken relationships. does not exists source ref: %s", rel.id, rel.sourceRef)
@@ -550,6 +546,12 @@ func fillAttacker(attacker attacker, relationships []relationship, attackers map
 				}
 			}
 		}
+	case "campaign":
+		attackerInfo.Type = models.CampaignType
+		// attackerInfo.Campaign = &models.AttackerCampaign{
+		// 	Softwares: []models.AttackerCampaignSoftware{},
+		// 	Groups:    []models.AttackerCampaignGroup{},
+		// }
 	}
 
 	for _, techniqueUsed := range techniquesUsed {

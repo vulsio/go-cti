@@ -57,6 +57,13 @@ func TestParse(t *testing.T) {
 						},
 						{
 							Reference: models.Reference{
+								SourceName:  "Mandiant UNC3890 Aug 2022",
+								Description: "Mandiant Israel Research Team. (2022, August 17). Suspected Iranian Actor Targeting Israeli Shipping, Healthcare, Government and Energy Sectors. Retrieved September 21, 2022.",
+								URL:         "https://www.mandiant.com/resources/blog/suspected-iranian-actor-targeting-israeli-shipping",
+							},
+						},
+						{
+							Reference: models.Reference{
 								SourceName:  "Medium Detecting Attempts to Steal Passwords from Memory",
 								Description: "French, D. (2018, October 2). Detecting Attempts to Steal Passwords from Memory. Retrieved October 11, 2019.",
 								URL:         "https://medium.com/threatpunter/detecting-attempts-to-steal-passwords-from-memory-558f16dce4ea",
@@ -149,6 +156,10 @@ func TestParse(t *testing.T) {
 							{
 								Name:        "S0192: Pupy",
 								Description: "[Pupy](https://attack.mitre.org/software/S0192) is an open source, cross-platform (Windows, Linux, OSX, Android) remote administration and post-exploitation tool. (Citation: GitHub Pupy) It is written in Python and can be generated as a payload in several different ways (Windows exe, Python file, PowerShell oneliner/file, Linux elf, APK, Rubber Ducky, etc.). (Citation: GitHub Pupy) [Pupy](https://attack.mitre.org/software/S0192) is publicly available on GitHub. (Citation: GitHub Pupy)",
+							},
+							{
+								Name:        "C0010: C0010",
+								Description: "[C0010](https://attack.mitre.org/campaigns/C0010) was a cyber espionage campaign conducted by UNC3890 that targeted Israeli shipping, government, aviation, energy, and healthcare organizations. Security researcher assess UNC3890 conducts operations in support of Iranian interests, and noted several limited technical connections to Iran, including PDB strings and Farsi language artifacts. [C0010](https://attack.mitre.org/campaigns/C0010) began by at least late 2020, and was still ongoing as of mid-2022.(Citation: Mandiant UNC3890 Aug 2022)",
 							},
 						},
 						Platforms: []models.TechniquePlatform{
@@ -357,6 +368,30 @@ func TestParse(t *testing.T) {
 					},
 					Created:  time.Date(2018, time.April, 18, 17, 59, 24, 739*int(time.Millisecond), time.UTC),
 					Modified: time.Date(2020, time.March, 30, 16, 47, 38, 393*int(time.Millisecond), time.UTC),
+				},
+				{
+					AttackerID:  "C0010",
+					Type:        models.CampaignType,
+					Name:        "C0010: C0010",
+					Description: "[C0010](https://attack.mitre.org/campaigns/C0010) was a cyber espionage campaign conducted by UNC3890 that targeted Israeli shipping, government, aviation, energy, and healthcare organizations. Security researcher assess UNC3890 conducts operations in support of Iranian interests, and noted several limited technical connections to Iran, including PDB strings and Farsi language artifacts. [C0010](https://attack.mitre.org/campaigns/C0010) began by at least late 2020, and was still ongoing as of mid-2022.(Citation: Mandiant UNC3890 Aug 2022)",
+					TechniquesUsed: []models.TechniqueUsed{
+						{
+							TechniqueID: "T1003",
+							Name:        "T1003: OS Credential Dumping",
+							Use:         "For [C0010](https://attack.mitre.org/campaigns/C0010), UNC3890 actors staged malware on their infrastructure for direct download onto a compromised system.(Citation: Mandiant UNC3890 Aug 2022) ",
+						},
+					},
+					References: []models.AttackerReference{
+						{
+							Reference: models.Reference{
+								SourceName:  "Mandiant UNC3890 Aug 2022",
+								Description: "Mandiant Israel Research Team. (2022, August 17). Suspected Iranian Actor Targeting Israeli Shipping, Healthcare, Government and Energy Sectors. Retrieved September 21, 2022.",
+								URL:         "https://www.mandiant.com/resources/blog/suspected-iranian-actor-targeting-israeli-shipping",
+							},
+						},
+					},
+					Created:  time.Date(2022, time.September, 21, 22, 16, 42, 3*int(time.Millisecond), time.UTC),
+					Modified: time.Date(2022, time.October, 4, 20, 18, 28, 362*int(time.Millisecond), time.UTC),
 				},
 			},
 		},
