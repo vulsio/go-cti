@@ -315,7 +315,7 @@ type TechniqueUsed struct {
 	AttackerID  int64  `gorm:"index:idx_technique_used_attacker_id" json:"-"`
 	TechniqueID string `gorm:"type:varchar(255)" json:"technique_id"`
 	Name        string `gorm:"type:varchar(255)" json:"name"`
-	Use         string `gorm:"type:varchar(255)" json:"use"`
+	Use         string `gorm:"type:text" json:"use"`
 }
 
 // AttackerReference is Child model of Attacker
