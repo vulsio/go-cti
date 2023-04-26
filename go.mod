@@ -15,10 +15,10 @@ require (
 	github.com/spf13/viper v1.11.0
 	golang.org/x/exp v0.0.0-20220414153411-bcd21879b8fd
 	golang.org/x/xerrors v0.0.0-20220411194840-2f41105eb62f
-	gorm.io/driver/mysql v1.3.3
+	gorm.io/driver/mysql v1.5.0
 	gorm.io/driver/postgres v1.3.4
 	gorm.io/driver/sqlite v1.3.1
-	gorm.io/gorm v1.23.4
+	gorm.io/gorm v1.24.7-0.20230306060331-85eaf9eeda11
 )
 
 require (
@@ -29,7 +29,7 @@ require (
 	github.com/elazarl/goproxy v0.0.0-20220417044921-416226498f94 // indirect
 	github.com/fatih/color v1.13.0 // indirect
 	github.com/fsnotify/fsnotify v1.5.1 // indirect
-	github.com/go-sql-driver/mysql v1.6.0 // indirect
+	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/go-stack/stack v1.8.1 // indirect
 	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/inconshreveable/mousetrap v1.0.0 // indirect
