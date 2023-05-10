@@ -18,7 +18,7 @@ var searchCmd = &cobra.Command{
 	Use:   "search",
 	Short: "Search the data of mitre/cti form DB",
 	Long:  `Search the data of mitrc/cti form DB`,
-	Args: func(cmd *cobra.Command, args []string) error {
+	Args: func(_ *cobra.Command, args []string) error {
 		if len(args) < 2 {
 			fmt.Println("[usage] $ go-cti search (cti|cve|attacker) $id1(, $id2...)")
 			return xerrors.New("Failed to search. err: argument is missing")
@@ -41,15 +41,10 @@ func searchCti(_ *cobra.Command, args []string) error {
 		return xerrors.Errorf("Failed to SetLogger. err: %w", err)
 	}
 
-	driver, locked, err := db.NewDB(
-		viper.GetString("dbtype"),
-		viper.GetString("dbpath"),
-		viper.GetBool("debug-sql"),
-		db.Option{},
-	)
+	driver, err := db.NewDB(viper.GetString("dbtype"), viper.GetString("dbpath"), viper.GetBool("debug-sql"), db.Option{})
 	if err != nil {
-		if locked {
-			return xerrors.Errorf("Failed to initialize DB. Close DB connection before fetching. err: %w", err)
+		if xerrors.Is(err, db.ErrDBLocked) {
+			return xerrors.Errorf("Failed to open DB. Close DB connection before fetching. err: %w", err)
 		}
 		return xerrors.Errorf("Failed to open DB. err: %w", err)
 	}
