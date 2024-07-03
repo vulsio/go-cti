@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -206,7 +208,12 @@ func (r *RedisDriver) InsertCti(techniques []models.Technique, mappings []models
 	log15.Info("Inserting Cyber Threat Intelligences...")
 
 	log15.Info("Inserting Techniques...")
-	bar := pb.StartNew(len(techniques))
+	bar := pb.StartNew(len(techniques)).SetWriter(func() io.Writer {
+		if viper.GetBool("log-json") {
+			return io.Discard
+		}
+		return os.Stderr
+	}())
 	for idx := range chunkSlice(len(techniques), batchSize) {
 		pipe := r.conn.Pipeline()
 		for _, technique := range techniques[idx.From:idx.To] {
@@ -227,7 +234,12 @@ func (r *RedisDriver) InsertCti(techniques []models.Technique, mappings []models
 	bar.Finish()
 
 	log15.Info("Inserting CVE-ID to CTI-ID CveToTechniques...")
-	bar = pb.StartNew(len(mappings))
+	bar = pb.StartNew(len(mappings)).SetWriter(func() io.Writer {
+		if viper.GetBool("log-json") {
+			return io.Discard
+		}
+		return os.Stderr
+	}())
 	for idx := range chunkSlice(len(mappings), batchSize) {
 		pipe := r.conn.Pipeline()
 		for _, mapping := range mappings[idx.From:idx.To] {
@@ -256,7 +268,12 @@ func (r *RedisDriver) InsertCti(techniques []models.Technique, mappings []models
 	bar.Finish()
 
 	log15.Info("Inserting Attackers...")
-	bar = pb.StartNew(len(attackers))
+	bar = pb.StartNew(len(attackers)).SetWriter(func() io.Writer {
+		if viper.GetBool("log-json") {
+			return io.Discard
+		}
+		return os.Stderr
+	}())
 	for idx := range chunkSlice(len(attackers), batchSize) {
 		pipe := r.conn.Pipeline()
 		for _, attacker := range attackers[idx.From:idx.To] {
