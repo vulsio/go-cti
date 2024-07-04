@@ -1,77 +1,88 @@
 package nvd
 
 import (
+	"archive/tar"
 	"bytes"
 	"compress/gzip"
 	"encoding/json"
-	"fmt"
+	"io"
+	"path/filepath"
 	"strings"
 	"time"
 
 	"github.com/inconshreveable/log15"
+	"golang.org/x/exp/slices"
 	"golang.org/x/xerrors"
 
 	"github.com/vulsio/go-cti/utils"
 )
 
-const nvdURLFormat = "https://nvd.nist.gov/feeds/json/cve/1.1/nvdcve-1.1-%s.json.gz"
+const repositoryURL = "https://github.com/vulsio/vuls-data-raw-nvd-api-cve/archive/refs/heads/main.tar.gz"
 
 // Fetch NVD CVE data
 func Fetch() (map[string][]string, error) {
-	years := []string{"recent", "modified"}
-	for y := 2002; y <= time.Now().Year(); y++ {
-		years = append(years, fmt.Sprintf("%d", y))
+	log15.Info("Fetching NVD CVE...")
+	bs, err := utils.FetchURL(repositoryURL)
+	if err != nil {
+		return nil, xerrors.Errorf("Failed to fetch NVD repository. err: %w", err)
 	}
-
-	cveToCwes := map[string][]string{}
-	for _, y := range years {
-		log15.Info("Fetching NVD CVE...", "year", y)
-		res, err := utils.FetchURL(fmt.Sprintf(nvdURLFormat, y))
-		if err != nil {
-			return nil, xerrors.Errorf("Failed to fetch NVD CVE %s. err: %w", y, err)
-		}
-		if err := parse(res, cveToCwes); err != nil {
-			return nil, xerrors.Errorf("Failed to parse NVD CVE %s. err: %w", y, err)
-		}
-	}
-	return cveToCwes, nil
+	return parse(bs)
 }
 
-func parse(res []byte, cveToCwes map[string][]string) error {
-	r, err := gzip.NewReader(bytes.NewReader(res))
+func parse(bs []byte) (map[string][]string, error) {
+	cveToCwes := map[string][]string{}
+
+	gr, err := gzip.NewReader(bytes.NewReader(bs))
 	if err != nil {
-		return xerrors.Errorf("Failed to new gzip reader. err: %w", err)
+		return nil, xerrors.Errorf("Failed to create gzip reader. err: %w", err)
 	}
-	defer r.Close()
+	defer gr.Close()
 
-	var nvddata nvd
-	if err := json.NewDecoder(r).Decode(&nvddata); err != nil {
-		return xerrors.Errorf("Failed to decode JSON. err: %w", err)
-	}
+	tr := tar.NewReader(gr)
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return nil, xerrors.Errorf("Failed to next tar reader. err: %w", err)
+		}
 
-	for _, item := range nvddata.CveItems {
-		if _, ok := cveToCwes[item.Cve.CveDataMeta.ID]; ok {
+		if hdr.FileInfo().IsDir() {
 			continue
 		}
 
-		rejected := false
-		for _, description := range item.Cve.Description.DescriptionData {
-			if strings.Contains(description.Value, "** REJECT **") {
-				rejected = true
-				break
+		if !strings.HasPrefix(filepath.Base(hdr.Name), "CVE-") {
+			continue
+		}
+
+		if err := func() error {
+			ss := strings.Split(filepath.Base(hdr.Name), "-")
+			if len(ss) != 3 {
+				return xerrors.Errorf("Failed to parse year. err: invalid ID format. expected: %q, actual: %q", "CVE-yyyy-\\d{4,}.json", filepath.Base(hdr.Name))
 			}
-		}
-		if rejected {
-			continue
-		}
+			if _, err := time.Parse("2006", ss[1]); err != nil {
+				return xerrors.Errorf("Failed to parse year. err: invalid ID format. expected: %q, actual: %q", "CVE-yyyy-\\d{4,}.json", filepath.Base(hdr.Name))
+			}
 
-		for _, data := range item.Cve.Problemtype.ProblemtypeData {
-			for _, description := range data.Description {
-				if strings.HasPrefix(description.Value, "CWE-") {
-					cveToCwes[item.Cve.CveDataMeta.ID] = append(cveToCwes[item.Cve.CveDataMeta.ID], description.Value)
+			var nvddata nvd
+			if err := json.NewDecoder(tr).Decode(&nvddata); err != nil {
+				return xerrors.Errorf("Failed to decode JSON. err: %w", err)
+			}
+
+			for _, w := range nvddata.Weaknesses {
+				for _, d := range w.Description {
+					if strings.HasPrefix(d.Value, "CWE-") && !slices.Contains(cveToCwes[nvddata.ID], d.Value) {
+						cveToCwes[nvddata.ID] = append(cveToCwes[nvddata.ID], d.Value)
+					}
 				}
 			}
+
+			return nil
+		}(); err != nil {
+			return nil, xerrors.Errorf("Failed to extract %s. err: %w", hdr.Name, err)
 		}
 	}
-	return nil
+
+	return cveToCwes, nil
 }
