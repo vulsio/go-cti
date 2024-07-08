@@ -14,10 +14,20 @@ func TestParse(t *testing.T) {
 		expected map[string][]string
 	}{
 		{
-			in: "testdata/cwec.xml.zip",
+			in: "testdata/v4.6/cwec.xml.zip",
 			expected: map[string][]string{
 				"CWE-1021": {"CAPEC-103", "CAPEC-181", "CAPEC-222", "CAPEC-504", "CAPEC-506", "CAPEC-654"},
 			},
+		},
+		{
+			in: "testdata/v4.14/cwec_latest.xml.zip",
+			expected: map[string][]string{
+				"CWE-1021": {"CAPEC-103", "CAPEC-181", "CAPEC-222", "CAPEC-504", "CAPEC-506", "CAPEC-587", "CAPEC-654"},
+			},
+		},
+		{
+			in:       "testdata/v5.0/cwec_latest.xml.zip",
+			expected: map[string][]string{},
 		},
 	}
 
