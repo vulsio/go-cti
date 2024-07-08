@@ -1,24 +1,14 @@
 package nvd
 
-// https://scap.nist.gov/schema/nvd/feed/1.1/nvd_cve_feed_json_1.1.schema
+// https://github.com/MaineK00n/vuls-data-update/blob/38e5f8203f3ba90ce565e4a8eb650c17412ea88d/pkg/fetch/nvd/api/cve/types.go#L18
 type nvd struct {
-	CveItems []struct {
-		Cve struct {
-			CveDataMeta struct {
-				ID string `json:"ID"`
-			} `json:"CVE_data_meta"`
-			Problemtype struct {
-				ProblemtypeData []struct {
-					Description []struct {
-						Value string `json:"value"`
-					} `json:"description"`
-				} `json:"problemtype_data"`
-			} `json:"problemtype"`
-			Description struct {
-				DescriptionData []struct {
-					Value string `json:"value"`
-				} `json:"description_data"`
-			} `json:"description"`
-		} `json:"cve"`
-	} `json:"CVE_Items"`
+	ID         string `json:"id"`
+	Weaknesses []struct {
+		Source      string `json:"source"`
+		Type        string `json:"type"`
+		Description []struct {
+			Lang  string `json:"lang"`
+			Value string `json:"value"`
+		} `json:"description"`
+	} `json:"weaknesses,omitempty"`
 }
