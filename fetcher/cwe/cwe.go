@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"strings"
 
 	"github.com/inconshreveable/log15"
 	"golang.org/x/xerrors"
@@ -37,7 +38,8 @@ func parse(res []byte) (map[string][]string, error) {
 
 	cweIDtoCapecIDs := map[string][]string{}
 	for _, file := range reader.File {
-		if file.Name != "cwec_v4.6.xml" {
+		if !strings.HasPrefix(file.Name, "cwec_v4") {
+			log15.Warn("Skip CWE parsing since only CWE v4 is supported", "file", file.Name)
 			continue
 		}
 
