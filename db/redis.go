@@ -6,7 +6,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 	"time"
@@ -15,7 +17,6 @@ import (
 	"github.com/go-redis/redis/v8"
 	"github.com/inconshreveable/log15"
 	"github.com/spf13/viper"
-	"golang.org/x/exp/maps"
 	"golang.org/x/xerrors"
 
 	"github.com/vulsio/go-cti/config"
@@ -214,9 +215,9 @@ func (r *RedisDriver) InsertCti(techniques []models.Technique, mappings []models
 		}
 		return os.Stderr
 	}())
-	for idx := range chunkSlice(len(techniques), batchSize) {
+	for chunk := range slices.Chunk(techniques, batchSize) {
 		pipe := r.conn.Pipeline()
-		for _, technique := range techniques[idx.From:idx.To] {
+		for _, technique := range chunk {
 			j, err := json.Marshal(technique)
 			if err != nil {
 				return xerrors.Errorf("Failed to marshal json. err: %w", err)
@@ -229,7 +230,7 @@ func (r *RedisDriver) InsertCti(techniques []models.Technique, mappings []models
 		if _, err := pipe.Exec(ctx); err != nil {
 			return xerrors.Errorf("Failed to exec pipeline. err: %w", err)
 		}
-		bar.Add(idx.To - idx.From)
+		bar.Add(len(chunk))
 	}
 	bar.Finish()
 
@@ -240,9 +241,9 @@ func (r *RedisDriver) InsertCti(techniques []models.Technique, mappings []models
 		}
 		return os.Stderr
 	}())
-	for idx := range chunkSlice(len(mappings), batchSize) {
+	for chunk := range slices.Chunk(mappings, batchSize) {
 		pipe := r.conn.Pipeline()
-		for _, mapping := range mappings[idx.From:idx.To] {
+		for _, mapping := range chunk {
 			cveKey := fmt.Sprintf(cveIDKeyFormat, mapping.CveID)
 			if _, ok := newDeps["mapping"][mapping.CveID]; !ok {
 				newDeps["mapping"][mapping.CveID] = map[string]struct{}{}
@@ -263,7 +264,7 @@ func (r *RedisDriver) InsertCti(techniques []models.Technique, mappings []models
 		if _, err := pipe.Exec(ctx); err != nil {
 			return xerrors.Errorf("Failed to exec pipeline. err: %w", err)
 		}
-		bar.Add(idx.To - idx.From)
+		bar.Add(len(chunk))
 	}
 	bar.Finish()
 
@@ -274,9 +275,9 @@ func (r *RedisDriver) InsertCti(techniques []models.Technique, mappings []models
 		}
 		return os.Stderr
 	}())
-	for idx := range chunkSlice(len(attackers), batchSize) {
+	for chunk := range slices.Chunk(attackers, batchSize) {
 		pipe := r.conn.Pipeline()
-		for _, attacker := range attackers[idx.From:idx.To] {
+		for _, attacker := range chunk {
 			j, err := json.Marshal(attacker)
 			if err != nil {
 				return xerrors.Errorf("Failed to marshal json. err: %w", err)
@@ -309,7 +310,7 @@ func (r *RedisDriver) InsertCti(techniques []models.Technique, mappings []models
 		if _, err := pipe.Exec(ctx); err != nil {
 			return xerrors.Errorf("Failed to exec pipeline. err: %w", err)
 		}
-		bar.Add(idx.To - idx.From)
+		bar.Add(len(chunk))
 	}
 
 	pipe := r.conn.Pipeline()
@@ -318,9 +319,9 @@ func (r *RedisDriver) InsertCti(techniques []models.Technique, mappings []models
 	}
 	for id, techniqueIDs := range oldDeps["mapping"] {
 		if strings.HasPrefix(id, "CVE") {
-			_ = pipe.SRem(ctx, fmt.Sprintf(cveIDKeyFormat, id), maps.Keys(techniqueIDs))
+			_ = pipe.SRem(ctx, fmt.Sprintf(cveIDKeyFormat, id), slices.Collect(maps.Keys(techniqueIDs)))
 		} else {
-			_ = pipe.SRem(ctx, fmt.Sprintf(atkIDKeyFormat, id), maps.Keys(techniqueIDs))
+			_ = pipe.SRem(ctx, fmt.Sprintf(atkIDKeyFormat, id), slices.Collect(maps.Keys(techniqueIDs)))
 		}
 	}
 	newDepsJSON, err := json.Marshal(newDeps)

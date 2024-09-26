@@ -7,6 +7,7 @@ import (
 	"io"
 	"log"
 	"os"
+	"slices"
 	"time"
 
 	"github.com/cheggaaa/pb/v3"
@@ -205,9 +206,7 @@ func (r *RDBDriver) MigrateDB() error {
 				}
 			}
 		case dialectMysql, dialectPostgreSQL:
-			if err != nil {
-				return xerrors.Errorf("Failed to migrate. err: %w", err)
-			}
+			return xerrors.Errorf("Failed to migrate. err: %w", err)
 		default:
 			return xerrors.Errorf("Not Supported DB dialects. r.name: %s", r.name)
 		}
@@ -304,11 +303,11 @@ func (r *RDBDriver) deleteAndInsertCti(conn *gorm.DB, techniques []models.Techni
 		}
 		return os.Stderr
 	}())
-	for idx := range chunkSlice(len(techniques), batchSize) {
-		if err = tx.Create(techniques[idx.From:idx.To]).Error; err != nil {
+	for chunk := range slices.Chunk(techniques, batchSize) {
+		if err = tx.Create(chunk).Error; err != nil {
 			return xerrors.Errorf("Failed to insert. err: %w", err)
 		}
-		bar.Add(idx.To - idx.From)
+		bar.Add(len(chunk))
 	}
 	bar.Finish()
 
@@ -319,11 +318,11 @@ func (r *RDBDriver) deleteAndInsertCti(conn *gorm.DB, techniques []models.Techni
 		}
 		return os.Stderr
 	}())
-	for idx := range chunkSlice(len(mappings), batchSize) {
-		if err = tx.Create(mappings[idx.From:idx.To]).Error; err != nil {
+	for chunk := range slices.Chunk(mappings, batchSize) {
+		if err = tx.Create(chunk).Error; err != nil {
 			return xerrors.Errorf("Failed to insert. err: %w", err)
 		}
-		bar.Add(idx.To - idx.From)
+		bar.Add(len(chunk))
 	}
 	bar.Finish()
 
@@ -334,11 +333,11 @@ func (r *RDBDriver) deleteAndInsertCti(conn *gorm.DB, techniques []models.Techni
 		}
 		return os.Stderr
 	}())
-	for idx := range chunkSlice(len(attackers), batchSize) {
-		if err = tx.Create(attackers[idx.From:idx.To]).Error; err != nil {
+	for chunk := range slices.Chunk(attackers, batchSize) {
+		if err = tx.Create(chunk).Error; err != nil {
 			return xerrors.Errorf("Failed to insert. err: %w", err)
 		}
-		bar.Add(idx.To - idx.From)
+		bar.Add(len(chunk))
 	}
 	bar.Finish()
 

@@ -7,11 +7,11 @@ import (
 	"encoding/json"
 	"io"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
 	"github.com/inconshreveable/log15"
-	"golang.org/x/exp/slices"
 	"golang.org/x/xerrors"
 
 	"github.com/vulsio/go-cti/utils"

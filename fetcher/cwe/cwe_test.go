@@ -1,11 +1,10 @@
 package cwe
 
 import (
+	"maps"
 	"os"
+	"slices"
 	"testing"
-
-	"golang.org/x/exp/maps"
-	"golang.org/x/exp/slices"
 )
 
 func TestParse(t *testing.T) {
