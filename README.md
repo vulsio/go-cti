@@ -182,9 +182,9 @@ package main
 import (
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
-	"golang.org/x/exp/slices"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 
