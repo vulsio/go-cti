@@ -2,7 +2,6 @@ package nvd
 
 import (
 	"maps"
-	"os"
 	"slices"
 	"testing"
 )
@@ -14,7 +13,7 @@ func TestParse(t *testing.T) {
 		expected map[string][]string
 	}{
 		{
-			in:   "testdata/main.tar.gz",
+			in:   "testdata/go-cti00001",
 			base: map[string][]string{},
 			expected: map[string][]string{
 				"CVE-2020-0002": {"CWE-787", "CWE-416"},
@@ -23,11 +22,7 @@ func TestParse(t *testing.T) {
 	}
 
 	for i, tt := range tests {
-		bs, err := os.ReadFile(tt.in)
-		if err != nil {
-			t.Fatalf("[%d] Failed to read file. err: %s", i, err)
-		}
-		actual, err := parse(bs)
+		actual, err := parse(tt.in)
 		if err != nil {
 			t.Fatalf("[%d] Failed to parse. err: %s", i, err)
 		}
