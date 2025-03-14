@@ -6,7 +6,7 @@ require (
 	github.com/cheggaaa/pb/v3 v3.1.6
 	github.com/glebarez/sqlite v1.11.0
 	github.com/go-redis/redis/v8 v8.11.5
-	github.com/google/go-cmp v0.6.0
+	github.com/google/go-cmp v0.7.0
 	github.com/inconshreveable/log15 v3.0.0-testing.5+incompatible
 	github.com/klauspost/compress v1.18.0
 	github.com/labstack/echo/v4 v4.13.3
