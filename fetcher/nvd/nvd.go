@@ -136,7 +136,7 @@ func parse(dir string) (map[string][]string, error) {
 			return err
 		}
 
-		if d.IsDir() || !(strings.HasPrefix(filepath.Base(path), "CVE-") && filepath.Ext(path) == ".json") {
+		if d.IsDir() || !strings.HasPrefix(filepath.Base(path), "CVE-") || filepath.Ext(path) != ".json" {
 			return nil
 		}
 

@@ -2,6 +2,7 @@ package commands
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
@@ -23,11 +24,13 @@ var searchCmd = &cobra.Command{
 			fmt.Println("[usage] $ go-cti search (cti|cve|attacker) $id1(, $id2...)")
 			return xerrors.New("Failed to search. err: argument is missing")
 		}
-		if !(args[0] == "cti" || args[0] == "cve" || args[0] == "attacker") {
+		switch args[0] {
+		case "cti", "cve", "attacker":
+			return nil
+		default:
 			fmt.Println("[usage] $ go-cti search (cti|cve|attacker) $id1(, $id2...)")
 			return xerrors.New(`Failed to search. err: search target is inappropriate, select "cti", "cve" or "attacker".`)
 		}
-		return nil
 	},
 	RunE: searchCti,
 }
@@ -43,7 +46,7 @@ func searchCti(_ *cobra.Command, args []string) error {
 
 	driver, err := db.NewDB(viper.GetString("dbtype"), viper.GetString("dbpath"), viper.GetBool("debug-sql"), db.Option{})
 	if err != nil {
-		if xerrors.Is(err, db.ErrDBLocked) {
+		if errors.Is(err, db.ErrDBLocked) {
 			return xerrors.Errorf("Failed to open DB. Close DB connection before fetching. err: %w", err)
 		}
 		return xerrors.Errorf("Failed to open DB. err: %w", err)
