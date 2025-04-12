@@ -55,7 +55,7 @@ func parse(res []byte) ([]models.Technique, []models.Attacker, error) {
 	techniquesUsed := map[string][]techniqueUsed{}
 	for _, rels := range relationships {
 		for _, rel := range rels {
-			if !(strings.HasPrefix(rel.targetRef, "attack-pattern--") && (strings.HasPrefix(rel.sourceRef, "intrusion-set--") || strings.HasPrefix(rel.sourceRef, "malware--") || strings.HasPrefix(rel.sourceRef, "tool--") || strings.HasPrefix(rel.sourceRef, "campaign--"))) {
+			if !strings.HasPrefix(rel.targetRef, "attack-pattern--") || !strings.HasPrefix(rel.sourceRef, "intrusion-set--") && !strings.HasPrefix(rel.sourceRef, "malware--") && !strings.HasPrefix(rel.sourceRef, "tool--") && !strings.HasPrefix(rel.sourceRef, "campaign--") {
 				continue
 			}
 			technique, ok := attackPatterns[rel.targetRef]
@@ -74,7 +74,7 @@ func parse(res []byte) ([]models.Technique, []models.Attacker, error) {
 	groupsUsed := map[string][]groupUsed{}
 	for _, rels := range relationships {
 		for _, rel := range rels {
-			if !((strings.HasPrefix(rel.targetRef, "malware--") || strings.HasPrefix(rel.targetRef, "tool--")) && strings.HasPrefix(rel.sourceRef, "intrusion-set--")) {
+			if !strings.HasPrefix(rel.targetRef, "malware--") && !strings.HasPrefix(rel.targetRef, "tool--") || !strings.HasPrefix(rel.sourceRef, "intrusion-set--") {
 				continue
 			}
 			software, ok := attackers[rel.targetRef]
