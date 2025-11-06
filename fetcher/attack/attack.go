@@ -108,8 +108,6 @@ func parseEachObject(root []ctiObject) (map[string]attackPattern, map[string]att
 	attackPatterns := map[string]attackPattern{}
 	attackers := map[string]attacker{}
 	others := map[string]otherInfo{}
-	dataSources := map[string]string{}
-	dataComponents := map[string]dataComponent{}
 	relationships := map[string][]relationship{}
 	for _, obj := range root {
 		switch obj.Type {
@@ -130,14 +128,6 @@ func parseEachObject(root []ctiObject) (map[string]attackPattern, map[string]att
 				name:        getObjectName(obj.Name, obj.ExternalReferences),
 				description: obj.Description,
 			}
-		case "x-mitre-data-source":
-			dataSources[obj.ID] = getObjectName(obj.Name, obj.ExternalReferences)
-		case "x-mitre-data-component":
-			dataComponents[obj.ID] = dataComponent{
-				name:          obj.Name,
-				description:   obj.Description,
-				dataSourceRef: obj.XMitreDataSourceRef,
-			}
 		case "relationship":
 			relationships[obj.TargetRef] = append(relationships[obj.TargetRef], relationship{
 				id:               obj.ID,
@@ -147,18 +137,6 @@ func parseEachObject(root []ctiObject) (map[string]attackPattern, map[string]att
 				targetRef:        obj.TargetRef,
 				references:       obj.ExternalReferences,
 			})
-		}
-	}
-
-	for id, component := range dataComponents {
-		ds, ok := dataSources[component.dataSourceRef]
-		if !ok {
-			return nil, nil, nil, nil, xerrors.Errorf("Failed to get data source name. id: %s, err: broken relationships", id)
-		}
-		others[id] = otherInfo{
-			objType:     "x-mitre-data-component",
-			name:        fmt.Sprintf("%s: %s", ds, component.name),
-			description: component.description,
 		}
 	}
 
@@ -333,18 +311,6 @@ func fillTechnique(attackPattern attackPattern, relationships []relationship, at
 				continue
 			}
 			technique.MitreAttack.Procedures = append(technique.MitreAttack.Procedures, models.Procedure{
-				Name:        info.name,
-				Description: info.description,
-			})
-		case "x-mitre-data-component":
-			info, ok := others[rel.sourceRef]
-			if !ok {
-				return models.Technique{}, xerrors.Errorf("Failed to get data-component. relationship id: %s, err: broken relationships. does not exists source ref: %s", rel.id, rel.sourceRef)
-			}
-			if info.deprecated {
-				continue
-			}
-			technique.MitreAttack.DataSources = append(technique.MitreAttack.DataSources, models.DataSource{
 				Name:        info.name,
 				Description: info.description,
 			})

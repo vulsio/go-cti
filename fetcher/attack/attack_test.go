@@ -138,12 +138,7 @@ func TestParse(t *testing.T) {
 						KillChainPhases: []models.KillChainPhase{
 							{Tactic: "TA0006: Credential Access"},
 						},
-						DataSources: []models.DataSource{
-							{
-								Name:        "DS0009: Process: Process Creation",
-								Description: "Birth of a new running process (ex: Sysmon EID 1 or Windows EID 4688)",
-							},
-						},
+						DataSources: []models.DataSource{},
 						Procedures: []models.Procedure{
 							{
 								Name:        "G0054: Sowbug",
