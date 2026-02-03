@@ -72,7 +72,7 @@ func buildCveToTechniques(techniques []models.Technique, cweToCapecs, cveToCwes 
 		}
 
 		if len(uniqTechniqueIDs) > 0 {
-			techniqueIDs := []models.CveToTechniqueID{}
+			techniqueIDs := make([]models.CveToTechniqueID, 0, len(uniqTechniqueIDs))
 			for techniqueID := range uniqTechniqueIDs {
 				techniqueIDs = append(techniqueIDs, models.CveToTechniqueID{
 					TechniqueID: techniqueID,
